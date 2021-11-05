@@ -1,6 +1,0 @@
-Type: Jupyter Notebook Extension
-Compatibility: 4.x, 5.x
-Name: my-extension
-Main: my-extension.js
-Link: README.md
-Description: My super duper extension
