@@ -275,6 +275,80 @@ define([  //dependencies
 		 }
     };
 
+    Notebook.prototype.insert_cell_at_index = function(type, index){
+
+        var ncells = this.ncells();
+        index = Math.min(index, ncells);
+        index = Math.max(index, 0);
+        var cell = null;
+        type = type || this.class_config.get_sync('default_cell_type');
+        if (type === 'above') {
+            if (index > 0) {
+                type = this.get_cell(index-1).cell_type;
+            } else {
+                type = 'code';
+            }
+        } else if (type === 'below') {
+            if (index < ncells) {
+                type = this.get_cell(index).cell_type;
+            } else {
+                type = 'code';
+            }
+        } else if (type === 'selected') {
+            type = this.get_selected_cell().cell_type;
+        }
+
+        if (ncells === 0 || this.is_valid_cell_index(index) || index === ncells) {
+            var cell_options = {
+                events: this.events, 
+                config: this.config, 
+                keyboard_manager: this.keyboard_manager, 
+                notebook: this,
+                tooltip: this.tooltip
+            };
+            switch(type) {
+            case 'code':
+                cell = new codecell.CodeCell(this.kernel, cell_options);
+                cell.set_input_prompt();
+                break;
+            case 'markdown':
+                cell = new textcell.MarkdownCell(cell_options);
+                break;
+            case 'raw':
+                cell = new textcell.RawCell(cell_options);
+                break;
+            default:
+                console.log("Unrecognized cell type: ", type, cellmod);
+                cell = new cellmod.UnrecognizedCell(cell_options);
+            }
+
+            if(this._insert_element_at_index(cell.element,index)) {
+                //cell indexing
+                var cells = Jupyter.notebook.get_cells();
+                var ncells = Jupyter.notebook.ncells();
+                for (var i=0; i<ncells; i++){
+                    var cell = cells[i];
+                    var index = Jupyter.notebook.find_cell_index(cell);
+                    cell.metadata.index = index;
+                
+                    var box = document.getElementsByClassName("repos")[i]; 
+                    $(box)[0].innerHTML = "";
+                    $(box).append(index + 1);
+		 }
+                cell.render();
+                this.events.trigger('create.Cell', {'cell': cell, 'index': index});
+                cell.refresh();
+                // We used to select the cell after we refresh it, but there
+                // are now cases were this method is called where select is
+                // not appropriate. The selection logic should be handled by the
+                // caller of the the top level insert_cell methods.
+                this.set_dirty(true);
+            }
+        }
+        return cell;
+
+    };
+
     function initialize () {
 		var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
@@ -298,8 +372,11 @@ define([  //dependencies
         document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         
+        
         Jupyter.notebook.restore_checkpoint(Jupyter.notebook.checkpoints[0].id) 
-        //can there be multiple checkpoints? 
+        //doesn't work for first nb opened after starting jupyter
+        //checkpoints is an array - can there be multiple checkpoints? 
+
 
         if (Jupyter.notebook !== undefined && Jupyter.notebook._fully_loaded) {
 			initialize();
@@ -309,6 +386,7 @@ define([  //dependencies
         //TODO
         //Fix indexing when cells in the middle are deleted
         //Fix indexing when new cell is added in the middle of the page
+
 
 
 
