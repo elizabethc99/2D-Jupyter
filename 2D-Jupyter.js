@@ -102,7 +102,6 @@ define([  //dependencies
         //cell.append(input).append(output); //REPLACED WITH BELOW
         var ncells = Jupyter.notebook.ncells();
         var initialIndex = ncells + 1;
-        //TODO: fix indexing when cell is added in the middle of the page
         var repos = $('<div>' + initialIndex + '</div>').addClass("repos").width('2%').css('backgroundColor', "lightgrey").css('cursor', 'move');  // the widget for dragging a cell
         // document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
         // document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
@@ -135,11 +134,30 @@ define([  //dependencies
                         top: event.pageY - y,			
                         zIndex: CodeCell.zIndexCount }; 
                 that.element.offset(that.metadata.spatial);    // set absolute position
+
+
+
             }
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
 
             repos.mouseup( function(event) {   // clean up
-                //console.log(event);
+                var cells = Jupyter.notebook.get_cells();
+                var ncells = Jupyter.notebook.ncells();
+                for(var i=0;i<ncells;i++){
+                    var thisSpatial = that.metadata.spatial;
+                    if(cells[i].metadata.spatial){
+                        var cellSpatial = cells[i].metadata.spatial;
+                        if(thisSpatial.left > cellSpatial.left && thisSpatial.top > cellSpatial.top){ //if collision
+                            console.log("collision");
+                            //create div? 
+                            
+                           
+                            
+                        }
+                    }
+                }
+
+
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
             });
@@ -199,7 +217,6 @@ define([  //dependencies
         }
         //////////////////////////////
     };
-
 
     Notebook.prototype.move_selection_up = function(){
         // actually will move the cell before the selection, after the selection
@@ -432,6 +449,30 @@ define([  //dependencies
         return this;
     };
 
+    var is_colliding = function($div1, $div2) {
+        // Div 1 data
+        var d1_offset             = $div1.offset();
+        var d1_height             = $div1.outerHeight( true );
+        var d1_width              = $div1.outerWidth( true );
+        var d1_distance_from_top  = d1_offset.top + d1_height;
+        var d1_distance_from_left = d1_offset.left + d1_width;
+    
+        // Div 2 data
+        var d2_offset             = $div2.offset();
+        var d2_height             = $div2.outerHeight( true );
+        var d2_width              = $div2.outerWidth( true );
+        var d2_distance_from_top  = d2_offset.top + d2_height;
+        var d2_distance_from_left = d2_offset.left + d2_width;
+    
+        var not_colliding = ( d1_distance_from_top < d2_offset.top || d1_offset.top > d2_distance_from_top || d1_distance_from_left < d2_offset.left || d1_offset.left > d2_distance_from_left );
+    
+        // Return whether it IS colliding
+        return ! not_colliding;
+    };
+
+
+
+
     function initialize () {
 		var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
@@ -443,9 +484,18 @@ define([  //dependencies
             cell.metadata.index = index;
            
             var box = document.getElementsByClassName("repos")[i]; 
-            $(box)[0].innerHTML = "";
-            $(box).append(index + 1);
+            if(typeof box !== 'undefined'){
+                $(box)[0].innerHTML = "";
+                $(box).append(index + 1);
+            }
+            
 		 }
+
+         document.addEventListener('mousemove', function(event){
+            
+
+
+         })
 	}
 
     
@@ -466,9 +516,9 @@ define([  //dependencies
 		}
 		events.on("notebook_loaded.Notebook", initialize);
 
-        //TODO
-        //Fix indexing when cells in the middle are deleted
-        //Fix indexing when new cell is added in the middle of the page
+
+        //Grou
+
 
 
 
