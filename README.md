@@ -20,4 +20,4 @@ Some description of the different options the nbextension provides, what they do
 Internals
 ---------
 
-How this extension works.
+https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/
