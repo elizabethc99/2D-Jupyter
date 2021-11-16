@@ -12,7 +12,9 @@ https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/install.html
 Download the 2D-Jupyter extension files (both the .js and .yaml files are needed) and place them in a folder inside
 src/jupyter_contrib_nbextensions/nbextension. 
 
-Enable the extension with the command jupyter nbextension enable 2D-Jupyter/2D-Jupyter
+Enable the extension with the command 
+```jupyter nbextension enable 2D-Jupyter/2D-Jupyter```
+or go to the nbextension tab in the Jupyter file tree and enable it via the checkbox. 
 
 Usage
 -----
