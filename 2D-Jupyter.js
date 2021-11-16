@@ -454,8 +454,7 @@ define([  //dependencies
     function load_ipython_extension() {
         document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
-        
-        
+
         Jupyter.notebook.restore_checkpoint(Jupyter.notebook.checkpoints[0].id) 
         //doesn't work for first nb opened after starting jupyter
         //checkpoints is an array - can there be multiple checkpoints? 
@@ -467,8 +466,13 @@ define([  //dependencies
 		events.on("notebook_loaded.Notebook", initialize);
 
         //TODO
-        //Fix indexing when cells in the middle are deleted
-        //Fix indexing when new cell is added in the middle of the page
+        //issues on startup
+        //group cells - two static columns
+        //test loading other notebooks
+        //issue with markdown cells/text cells? 
+        //clean up github + update readme
+
+        
 
 
 
