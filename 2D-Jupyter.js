@@ -31,6 +31,7 @@ define([  //dependencies
     var Cell = cell.Cell;
     var CodeCell = codecell.CodeCell; 
     var Notebook = notebook.Notebook;
+    var dupNotebook = Jupyter.notebook;
     
     
     CodeCell._options = {
@@ -447,9 +448,6 @@ define([  //dependencies
         return this;
     };
 
-
-
-
     function initialize () {
 		var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
@@ -467,38 +465,30 @@ define([  //dependencies
             }
             
 		 }
-
-         document.addEventListener('mousemove', function(event){
-            
-
-
-         })
+ 
 	}
-
-    
-
 
     function load_ipython_extension() {
         document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
-        
-        
+
         Jupyter.notebook.restore_checkpoint(Jupyter.notebook.checkpoints[0].id) 
         //doesn't work for first nb opened after starting jupyter
         //checkpoints is an array - can there be multiple checkpoints? 
 
+        // var cln = document.getElementById('notebook-container').cloneNode();
+        // cln.style.float = 'right';
+        // document.getElementById('notebook').appendChild(cln);
+
+        //var dupNotebook = Jupyter.notebook;
+        dupNotebook.bind_events();
+        dupNotebook.create_elements();
+        
 
         if (Jupyter.notebook !== undefined && Jupyter.notebook._fully_loaded) {
 			initialize();
 		}
 		events.on("notebook_loaded.Notebook", initialize);
-
-
-        //Grou
-
-
-
-
 
     }
 
