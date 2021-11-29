@@ -1,4 +1,3 @@
-//requireJS https://requirejs.org/docs/api.html
 define([  //dependencies
     'require',
     'jquery',
@@ -31,7 +30,7 @@ define([  //dependencies
     var Cell = cell.Cell;
     var CodeCell = codecell.CodeCell; 
     var Notebook = notebook.Notebook;
-    var dupNotebook = Jupyter.notebook;
+    //var dupNotebook = Jupyter.notebook;
     
     
     CodeCell._options = {
@@ -142,18 +141,15 @@ define([  //dependencies
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
 
             repos.mouseup( function(event) {   // clean up
-                var cells = Jupyter.notebook.get_cells();
-                var ncells = Jupyter.notebook.ncells();
-                for(var i=0;i<ncells;i++){
-                    var thisSpatial = that.metadata.spatial;
-                    if(cells[i].metadata.spatial){
-                        var cellSpatial = cells[i].metadata.spatial;
-                        if(thisSpatial.left > cellSpatial.left && thisSpatial.top > cellSpatial.top){ //if collision
-                            console.log("collision");
-                            //make both cells into a single div object
-
-                        }
-                    }
+                var col2 = document.getElementById("column2");
+                var thisSpatial = that.metadata.spatial;
+                var col2Rect = col2.getBoundingClientRect();
+                
+                if(thisSpatial.left > col2Rect.left && thisSpatial.top > col2Rect.top){ //if collision
+                    console.log("collision");
+                    //make cells into a single div object w/ nb container
+                    col2.append(that);
+                      
                 }
 
 
@@ -449,10 +445,20 @@ define([  //dependencies
     };
 
     function initialize () {
+        // var cln = document.getElementById('notebook-container').cloneNode();
+        // cln.id = "column2";
+        // cln.height = "30px"
+        // cln.backgroundColor = "white";
+        // cln.style.float = 'right';
+        // document.getElementById('notebook').appendChild(cln);
+
+        // //var dupNotebook = Jupyter.notebook;
+        // // dupNotebook.bind_events();
+        // // dupNotebook.create_elements();
+
+        //intial run index
 		var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
-
-
 		for (var i=0; i<ncells; i++){
 			var cell = cells[i];
             var index = Jupyter.notebook.find_cell_index(cell);
@@ -474,16 +480,13 @@ define([  //dependencies
 
         Jupyter.notebook.restore_checkpoint(Jupyter.notebook.checkpoints[0].id) 
         //doesn't work for first nb opened after starting jupyter
-        //checkpoints is an array - can there be multiple checkpoints? 
 
-        // var cln = document.getElementById('notebook-container').cloneNode();
-        // cln.style.float = 'right';
-        // document.getElementById('notebook').appendChild(cln);
-
-        //var dupNotebook = Jupyter.notebook;
-        dupNotebook.bind_events();
-        dupNotebook.create_elements();
-        
+        var cln = document.getElementById('notebook-container').cloneNode();
+        cln.id = "column2";
+        cln.style.height = "30px";
+        cln.style.backgroundColor = "white";
+        cln.style.float = 'right';
+        document.getElementById('notebook').appendChild(cln);
 
         if (Jupyter.notebook !== undefined && Jupyter.notebook._fully_loaded) {
 			initialize();
