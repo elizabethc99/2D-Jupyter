@@ -5,6 +5,7 @@ define([  //dependencies
     'base/js/events',
     'base/js/utils',
     'notebook/js/codecell',
+    'notebook/js/textcell',
     'notebook/js/notebook',
     'notebook/js/cell',
     'notebook/js/celltoolbar',
@@ -18,6 +19,7 @@ define([  //dependencies
     events,
     utils,
     codecell,
+    textcell,
     notebook,
     cell,
     celltoolbar,
@@ -144,11 +146,11 @@ define([  //dependencies
                 var col2 = document.getElementById("column2");
                 var thisSpatial = that.metadata.spatial;
                 var col2Rect = col2.getBoundingClientRect();
-                
                 if(thisSpatial.left > col2Rect.left && thisSpatial.top > col2Rect.top){ //if collision
-                    console.log("collision");
                     //make cells into a single div object w/ nb container
-                    col2.append(that);
+                    console.log("collision");
+                    //$(col2).append("collision");
+                    $(col2).append(that.element);
                       
                 }
 
@@ -445,13 +447,6 @@ define([  //dependencies
     };
 
     function initialize () {
-        // var cln = document.getElementById('notebook-container').cloneNode();
-        // cln.id = "column2";
-        // cln.height = "30px"
-        // cln.backgroundColor = "white";
-        // cln.style.float = 'right';
-        // document.getElementById('notebook').appendChild(cln);
-
         // //var dupNotebook = Jupyter.notebook;
         // // dupNotebook.bind_events();
         // // dupNotebook.create_elements();
@@ -483,10 +478,11 @@ define([  //dependencies
 
         var cln = document.getElementById('notebook-container').cloneNode();
         cln.id = "column2";
+        cln.style.float = 'right';
         cln.style.height = "30px";
         cln.style.backgroundColor = "white";
-        cln.style.float = 'right';
-        document.getElementById('notebook').appendChild(cln);
+        //document.getElementById('notebook').appendChild(cln);
+        document.getElementById('notebook-container').appendChild(cln);
 
         if (Jupyter.notebook !== undefined && Jupyter.notebook._fully_loaded) {
 			initialize();
