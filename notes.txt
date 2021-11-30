@@ -1,6 +1,0 @@
-- access cell metadata
-
-var cells = Jupyter.notebook.get_cells(); //gets all the cells in the nb
-
-cell.metadata.cell_style //can change the 
-
