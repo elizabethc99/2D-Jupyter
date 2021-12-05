@@ -113,7 +113,7 @@ define([  //dependencies
 
         repos.dblclick( function(event) {   // double-click = put back into notebook
                 that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
-                delete that.metadata.spatial;
+                //delete that.metadata.spatial;
         });
         repos.mousedown( function(event) {	// drag the cell
             //console.log(that, event);
@@ -143,14 +143,35 @@ define([  //dependencies
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
 
             repos.mouseup( function(event) {   // clean up
+                var col1 = document.getElementById("column1");
                 var col2 = document.getElementById("column2");
                 var thisSpatial = that.metadata.spatial;
+                var col1Rect = col1.getBoundingClientRect();
                 var col2Rect = col2.getBoundingClientRect();
-                if(thisSpatial.left > col2Rect.left && thisSpatial.top > col2Rect.top){ //if collision
+
+                // console.log(col1Rect);
+
+                if(thisSpatial.left > col1Rect.left && 
+                    thisSpatial.top > col1Rect.top &&
+                    thisSpatial.left < (col1Rect.left + col1Rect.width)
+                    ){ //if collision
                     //make cells into a single div object w/ nb container
-                    console.log("collision");
+                    console.log("col1 collision");
+                    //$(col2).append("collision");
+                    $(col1).append(that.element);
+                    that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                      
+                }
+
+                if(thisSpatial.left > col2Rect.left && 
+                    thisSpatial.top > col2Rect.top &&
+                    thisSpatial.left < (col2Rect.left + col2Rect.width)
+                    ){ //if collision
+                    //make cells into a single div object w/ nb container
+                    console.log("col2 collision");
                     //$(col2).append("collision");
                     $(col2).append(that.element);
+                    that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
                       
                 }
 
@@ -454,6 +475,14 @@ define([  //dependencies
         //intial run index
 		var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
+
+        // var cellElements = document.getElementsByClassName("cell");
+        // for(var j = 0; j < cellElements.length; j++){
+        //     console.log(cellElements[j]);
+        //     var cell = $(cellElements[j]).detach();
+        //     document.getElementById("column1").append(cellElements[j]);
+
+        // }
 		for (var i=0; i<ncells; i++){
 			var cell = cells[i];
             var index = Jupyter.notebook.find_cell_index(cell);
@@ -470,19 +499,53 @@ define([  //dependencies
 	}
 
     function load_ipython_extension() {
-        document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
+        //document.getElementById('notebook').style.overflow = 'scroll';
+        document.getElementById('notebook-container').style.height = 'inherit';
+        document.getElementById('notebook-container').style.width = '1200px';  // set notebook and default cell width
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
+        //document.getElementById('notebook-container').style.float = "left";
+        document.getElementById('notebook-container').style.backgroundColor = "transparent";
+        //document.getElementById('notebook-container').id = "column";
 
         Jupyter.notebook.restore_checkpoint(Jupyter.notebook.checkpoints[0].id) 
         //doesn't work for first nb opened after starting jupyter
 
-        var cln = document.getElementById('notebook-container').cloneNode();
-        cln.id = "column2";
-        cln.style.float = 'right';
-        cln.style.height = "30px";
-        cln.style.backgroundColor = "white";
+        //var endspace = $(document.getElementsByClassName("end_space")).detach();
+
+        // var cln = document.getElementById('notebook-container').cloneNode();
+        // cln.id = "column2"
+        // cln.style.width = "48%";
+        // cln.style.height = "30px";
+        // cln.style.marginRight = "20px";
+        // cln.style.marginLeft = '0px';
+        // cln.style.float = "right";
+        // cln.style.backgroundColor = "white";
+        // document.getElementById('notebook').append(cln);
+
+
+        
+
+        //var cln = document.getElementById('notebook-container').cloneNode();
+        var cln1 = document.createElement('div');
+        cln1.class = "container";
+        cln1.id = "column1";
+        cln1.style.width = "49%";
+        cln1.style.float = 'left';
+        cln1.style.height = "30px";
+        cln1.style.backgroundColor = "white";
         //document.getElementById('notebook').appendChild(cln);
-        document.getElementById('notebook-container').appendChild(cln);
+        document.getElementById('notebook-container').appendChild(cln1);
+
+        //var cln = document.getElementById('notebook-container').cloneNode();
+        var cln2 = document.createElement('div');
+        cln2.class = "container";
+        cln2.id = "column2";
+        cln2.style.width = "49%";
+        cln2.style.float = 'right';
+        cln2.style.height = "30px";
+        cln2.style.backgroundColor = "white";
+        //document.getElementById('notebook').appendChild(cln);
+        document.getElementById('notebook-container').appendChild(cln2);
 
         if (Jupyter.notebook !== undefined && Jupyter.notebook._fully_loaded) {
 			initialize();
