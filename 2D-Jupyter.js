@@ -1,4 +1,3 @@
-//requireJS https://requirejs.org/docs/api.html
 define([  //dependencies
     'require',
     'jquery',
@@ -6,6 +5,7 @@ define([  //dependencies
     'base/js/events',
     'base/js/utils',
     'notebook/js/codecell',
+    'notebook/js/textcell',
     'notebook/js/notebook',
     'notebook/js/cell',
     'notebook/js/celltoolbar',
@@ -19,6 +19,7 @@ define([  //dependencies
     events,
     utils,
     codecell,
+    textcell,
     notebook,
     cell,
     celltoolbar,
@@ -31,7 +32,7 @@ define([  //dependencies
     var Cell = cell.Cell;
     var CodeCell = codecell.CodeCell; 
     var Notebook = notebook.Notebook;
-    
+
     
     CodeCell._options = {
         cm_config : {
@@ -102,7 +103,6 @@ define([  //dependencies
         //cell.append(input).append(output); //REPLACED WITH BELOW
         var ncells = Jupyter.notebook.ncells();
         var initialIndex = ncells + 1;
-        //TODO: fix indexing when cell is added in the middle of the page
         var repos = $('<div>' + initialIndex + '</div>').addClass("repos").width('2%').css('backgroundColor', "lightgrey").css('cursor', 'move');  // the widget for dragging a cell
         // document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
         // document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
@@ -138,8 +138,42 @@ define([  //dependencies
             }
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
 
-            repos.mouseup( function(event) {   // clean up
-                //console.log(event);
+            repos.mouseup( function(event) {  
+                //DOM collision detection?
+                var col1 = document.getElementById("column1");
+                var col2 = document.getElementById("column2");
+                var thisSpatial = that.metadata.spatial;
+                var col1Rect = col1.getBoundingClientRect();
+                var col2Rect = col2.getBoundingClientRect();
+
+                if(thisSpatial.left > col1Rect.left && //if collision
+                    thisSpatial.top > col1Rect.top &&
+                    thisSpatial.left < (col1Rect.left + col1Rect.width)
+                    ){ 
+                    //make cells into a single div object w/ nb container
+                    var cell = that.element.detach();
+                    //that.element.remove();
+                    $(col1).append(cell);
+                    that.metadata.column = 1;
+                    //drag cells in order?
+                    delete that.metadata.spatial;
+                    that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                    reindex();
+                }
+
+                if(thisSpatial.left > col2Rect.left && //if collision
+                    thisSpatial.top > col2Rect.top &&
+                    thisSpatial.left < (col2Rect.left + col2Rect.width)
+                    ){ 
+                    var cell = that.element.detach();
+                    //that.element.remove();
+                    $(col2).append(cell);
+                    that.metadata.column = 2;
+                    delete that.metadata.spatial;
+                    that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                    reindex(); 
+                }
+
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
             });
@@ -190,6 +224,8 @@ define([  //dependencies
         // Append to the end of function:  CodeCell.prototype.fromJSON = function (data) {
         // Restores spatial positions on notebook file load.
         //
+        var col1 = document.getElementById("column1");
+        var col2 = document.getElementById("column2");
         if(data.metadata.spatial) {
         	this.element.css("position", 'absolute').width(800-45);  // pull out of notebook
 			this.element.css("zIndex", data.metadata.spatial.zIndex);
@@ -197,9 +233,16 @@ define([  //dependencies
 				CodeCell.zIndexCount = data.metadata.spatial.zIndex;
         	this.element.offset(data.metadata.spatial);  // set absolute position
         }
+        if(data.metadata.column){
+            if(data.metadata.column == 1){
+                $(col1).append(this.element);
+            }
+            if(data.metadata.column == 2){
+                $(col2).append(this.element);
+            }
+        }
         //////////////////////////////
     };
-
 
     Notebook.prototype.move_selection_up = function(){
         // actually will move the cell before the selection, after the selection
@@ -213,29 +256,24 @@ define([  //dependencies
         if (first === 0){
             return;
         }
+
         var tomove = this.get_cell_element(first - 1);
         var pivot = this.get_cell_element(last);
 
-        tomove.detach();
-        pivot.after(tomove);
+        var cellCol = this.get_cell(selected).metadata.column;
+        var cellIndex = this.get_cell(selected).metadata.index + 1;
+        var colCounts = countCellsinColumns();
+        
+        if(!(cellCol == 2 && cellIndex == colCounts[0] + 1)){ //if the cell is at the end of col 1
+            tomove.detach();
+            pivot.after(tomove);
+        }
 
         this.get_cell(selected-1).focus_cell();
         this.select(anchored - 1);
         this.select(selected - 1, false);
         
-        //cell indexing
-        var cells = Jupyter.notebook.get_cells();
-		var ncells = Jupyter.notebook.ncells();
-		for (var i=0; i<ncells; i++){
-			var cell = cells[i];
-            var index = Jupyter.notebook.find_cell_index(cell);
-            cell.metadata.index = index;
-
-            
-            var box = document.getElementsByClassName("repos")[i]; 
-            $(box)[0].innerHTML = "";
-            $(box).append(index + 1);
-		 }
+        reindex();
     };
 
     Notebook.prototype.move_selection_down = function(){
@@ -253,30 +291,24 @@ define([  //dependencies
         var tomove = this.get_cell_element(last + 1);
         var pivot = this.get_cell_element(first);
 
-        tomove.detach();
-        pivot.before(tomove);
-
+        var cellCol = this.get_cell(selected).metadata.column;
+        var cellIndex = this.get_cell(selected).metadata.index + 1;
+        var colCounts = countCellsinColumns();
+        
+        if(!(cellCol == 1 && cellIndex == colCounts[0])){ //if the cell is not at the end of col 1
+            tomove.detach();
+            pivot.before(tomove);
+        }
+       
         this.get_cell(selected+1).focus_cell();
         this.select(first);
         this.select(anchored + 1);
         this.select(selected + 1, false);
 
-        //cell indexing
-        var cells = Jupyter.notebook.get_cells();
-		var ncells = Jupyter.notebook.ncells();
-        for (var i=0; i<ncells; i++){
-			var cell = cells[i];
-            var index = Jupyter.notebook.find_cell_index(cell);
-            cell.metadata.index = index;
-           
-            var box = document.getElementsByClassName("repos")[i]; 
-            $(box)[0].innerHTML = "";
-            $(box).append(index + 1);
-		 }
+        reindex();
     };
 
     Notebook.prototype.insert_cell_at_index = function(type, index){
-
         var ncells = this.ncells();
         index = Math.min(index, ncells);
         index = Math.max(index, 0);
@@ -323,18 +355,7 @@ define([  //dependencies
             }
 
             if(this._insert_element_at_index(cell.element,index)) {
-                //cell indexing
-                var cells = Jupyter.notebook.get_cells();
-                var ncells = Jupyter.notebook.ncells();
-                for (var i=0; i<ncells; i++){
-                    var cell = cells[i];
-                    var index = Jupyter.notebook.find_cell_index(cell);
-                    cell.metadata.index = index;
-                
-                    var box = document.getElementsByClassName("repos")[i]; 
-                    $(box)[0].innerHTML = "";
-                    $(box).append(index + 1);
-		 }
+                reindex();
                 cell.render();
                 this.events.trigger('create.Cell', {'cell': cell, 'index': index});
                 cell.refresh();
@@ -432,50 +453,94 @@ define([  //dependencies
         return this;
     };
 
-    function initialize () {
-		var cells = Jupyter.notebook.get_cells();
+    function reindex(){
+        var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
-
-
 		for (var i=0; i<ncells; i++){
 			var cell = cells[i];
             var index = Jupyter.notebook.find_cell_index(cell);
             cell.metadata.index = index;
-           
+
+            
             var box = document.getElementsByClassName("repos")[i]; 
             $(box)[0].innerHTML = "";
             $(box).append(index + 1);
 		 }
+    }
+
+    function countCellsinColumns(){
+        var colCounts = [0,0];
+        var cells = Jupyter.notebook.get_cells();
+        var ncells = Jupyter.notebook.ncells();
+        for (var i=0; i<ncells; i++){
+			var cell = cells[i];
+            if(cell.metadata.column == 1){
+                colCounts[0]++;
+            }
+            if(cell.metadata.column == 2){
+                colCounts[1]++;
+            }
+        }
+        return colCounts;
+    }
+
+    function update_styling() {
+        document.getElementById('notebook-container').style.height = 'inherit';
+        document.getElementById('notebook-container').style.width = '1200px';  // set notebook and default cell width
+        document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
+        document.getElementById('notebook-container').style.backgroundColor = "transparent";
+
+        var cln1 = document.createElement('div');
+        cln1.class = "container";
+        cln1.id = "column1";
+        cln1.style.width = "49%";
+        cln1.style.float = 'left';
+        cln1.style.height = "inherit";
+        cln1.style.minHeight = "30px";
+        cln1.style.backgroundColor = "white";
+        document.getElementById('notebook-container').appendChild(cln1);
+
+        var cln2 = document.createElement('div');
+        cln2.class = "container";
+        cln2.id = "column2";
+        cln2.style.width = "49%";
+        cln2.style.float = 'right';
+        cln2.style.height = "inherit";
+        cln2.style.minHeight = "30px";
+        cln2.style.backgroundColor = "white";
+        document.getElementById('notebook-container').appendChild(cln2);
+
+
+
+
+    }
+
+    function initialize () {
+        //intial run index
+		var cells = Jupyter.notebook.get_cells();
+		var ncells = Jupyter.notebook.ncells();
+        var col1 = document.getElementById("column1");
+        var col2 = document.getElementById("column2");
+
+		for (var i=0; i<ncells; i++){
+            var cell = cells[i];
+            var index = Jupyter.notebook.find_cell_index(cell);
+            cell.metadata.index = index;
+           
+            var box = document.getElementsByClassName("repos")[i]; 
+            if(typeof box !== 'undefined'){
+                $(box)[0].innerHTML = "";
+                $(box).append(index + 1);
+            }
+            
+		 }
+ 
 	}
 
-    
-
-
     function load_ipython_extension() {
-        document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
-        document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
-
-        Jupyter.notebook.restore_checkpoint(Jupyter.notebook.checkpoints[0].id) 
-        //doesn't work for first nb opened after starting jupyter
-        //checkpoints is an array - can there be multiple checkpoints? 
-
-
-        if (Jupyter.notebook !== undefined && Jupyter.notebook._fully_loaded) {
-			initialize();
-		}
-		events.on("notebook_loaded.Notebook", initialize);
-
-        //TODO
-        //issues on startup
-        //group cells - two static columns
-        //test loading other notebooks
-        //issue with markdown cells/text cells? 
-        //clean up github + update readme
-
-        
-
-
-
+        update_styling();
+        Jupyter.notebook.restore_checkpoint('checkpoint') 
+        return Jupyter.notebook.config.loaded.then(initialize);
 
     }
 
