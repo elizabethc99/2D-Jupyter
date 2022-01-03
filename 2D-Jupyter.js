@@ -139,40 +139,61 @@ define([  //dependencies
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
 
             repos.mouseup( function(event) {  
-                //DOM collision detection?
-                var col1 = document.getElementById("column1");
-                var col2 = document.getElementById("column2");
                 var thisSpatial = that.metadata.spatial;
-                var col1Rect = col1.getBoundingClientRect();
-                var col2Rect = col2.getBoundingClientRect();
-
-                if(thisSpatial.left > col1Rect.left && //if collision
-                    thisSpatial.top > col1Rect.top &&
-                    thisSpatial.left < (col1Rect.left + col1Rect.width)
-                    ){ 
-                    //make cells into a single div object w/ nb container
-                    var cell = that.element.detach();
-                    //that.element.remove();
-                    $(col1).append(cell);
-                    that.metadata.column = 1;
-                    //drag cells in order?
-                    delete that.metadata.spatial;
-                    that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
-                    reindex();
+                var columns = document.getElementsByClassName("column");
+                for(var c = 0; c < columns.length; c++){
+                    var col = columns[c];
+                    var colRect = col.getBoundingClientRect();
+                    if(thisSpatial.left > colRect.left && //if collision
+                        thisSpatial.top > colRect.top &&
+                        thisSpatial.left < (colRect.left + colRect.width)
+                        ){ 
+                        //make cells into a single div object w/ nb container
+                        var cell = that.element.detach();
+                        //that.element.remove();
+                        $(col).append(cell);
+                        that.metadata.column = c + 1;
+                        //drag cells in order?
+                        delete that.metadata.spatial;
+                        that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                        reindex();
+                    }
+                    
                 }
+                // //DOM collision detection?
+                // var col1 = document.getElementById("column1");
+                // var col2 = document.getElementById("column2");
+                // var thisSpatial = that.metadata.spatial;
+                // var col1Rect = col1.getBoundingClientRect();
+                // var col2Rect = col2.getBoundingClientRect();
 
-                if(thisSpatial.left > col2Rect.left && //if collision
-                    thisSpatial.top > col2Rect.top &&
-                    thisSpatial.left < (col2Rect.left + col2Rect.width)
-                    ){ 
-                    var cell = that.element.detach();
-                    //that.element.remove();
-                    $(col2).append(cell);
-                    that.metadata.column = 2;
-                    delete that.metadata.spatial;
-                    that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
-                    reindex(); 
-                }
+                // if(thisSpatial.left > col1Rect.left && //if collision
+                //     thisSpatial.top > col1Rect.top &&
+                //     thisSpatial.left < (col1Rect.left + col1Rect.width)
+                //     ){ 
+                //     //make cells into a single div object w/ nb container
+                //     var cell = that.element.detach();
+                //     //that.element.remove();
+                //     $(col1).append(cell);
+                //     that.metadata.column = 1;
+                //     //drag cells in order?
+                //     delete that.metadata.spatial;
+                //     that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                //     reindex();
+                // }
+
+                // if(thisSpatial.left > col2Rect.left && //if collision
+                //     thisSpatial.top > col2Rect.top &&
+                //     thisSpatial.left < (col2Rect.left + col2Rect.width)
+                //     ){ 
+                //     var cell = that.element.detach();
+                //     //that.element.remove();
+                //     $(col2).append(cell);
+                //     that.metadata.column = 2;
+                //     delete that.metadata.spatial;
+                //     that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                //     reindex(); 
+                // }
 
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
@@ -492,6 +513,7 @@ define([  //dependencies
         document.getElementById('notebook-container').style.width = '1200px';  // set notebook and default cell width
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         document.getElementById('notebook-container').style.backgroundColor = "transparent";
+        document.getElementById('notebook-container').style.boxShadow = null;
 
         var cln1 = document.createElement('div');
         cln1.classList.add("column");
@@ -516,14 +538,11 @@ define([  //dependencies
     }
 
     function add_column(){
-        console.log("adding column");
-
         var numColumns = document.getElementsByClassName("column").length;
         numColumns++;
-        console.log(numColumns);
         
-        var newColumnWidth = 100/numColumns - (numColumns);
-        var newNbContainerWidth = 400*numColumns + 50;
+        var newColumnWidth = 100/numColumns - 2;
+        var newNbContainerWidth = 500*numColumns + 50;
         document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
         
         //restyling existing columns
@@ -544,7 +563,7 @@ define([  //dependencies
         newCol.style.margin = "10px";
         newCol.style.height = "inherit";
         newCol.style.minHeight = "30px";
-        newCol.style.backgroundColor = "red";
+        newCol.style.backgroundColor = "white";
         document.getElementById('notebook-container').appendChild(newCol);
 
     }
