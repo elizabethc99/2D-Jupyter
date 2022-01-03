@@ -485,13 +485,16 @@ define([  //dependencies
     }
 
     function update_styling() {
+        document.getElementById('notebook').style.overflowX = "visible";
+        document.getElementById('notebook').style.overflowY = "visible";
+
         document.getElementById('notebook-container').style.height = 'inherit';
         document.getElementById('notebook-container').style.width = '1200px';  // set notebook and default cell width
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         document.getElementById('notebook-container').style.backgroundColor = "transparent";
 
         var cln1 = document.createElement('div');
-        cln1.class = "container";
+        cln1.classList.add("column");
         cln1.id = "column1";
         cln1.style.width = "49%";
         cln1.style.float = 'left';
@@ -501,7 +504,7 @@ define([  //dependencies
         document.getElementById('notebook-container').appendChild(cln1);
 
         var cln2 = document.createElement('div');
-        cln2.class = "container";
+        cln2.classList.add("column");
         cln2.id = "column2";
         cln2.style.width = "49%";
         cln2.style.float = 'right';
@@ -510,8 +513,39 @@ define([  //dependencies
         cln2.style.backgroundColor = "white";
         document.getElementById('notebook-container').appendChild(cln2);
 
+    }
+
+    function add_column(){
+        console.log("adding column");
+
+        var numColumns = document.getElementsByClassName("column").length;
+        numColumns++;
+        console.log(numColumns);
+        
+        var newColumnWidth = 100/numColumns - (numColumns);
+        var newNbContainerWidth = 400*numColumns + 50;
+        document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
+        
+        //restyling existing columns
+        var columns = document.getElementsByClassName("column"); 
+        for(var c = 0; c < columns.length; c++){
+            columns[c].style.float = 'left';
+            columns[c].style.margin = "10px";
+            columns[c].style.width =  newColumnWidth.toString() + "%"
+        }
 
 
+        //adding new column
+        var newCol = document.createElement('div');   
+        newCol.classList.add("column");
+        newCol.id = "newCol" + numColumns.toString();
+        newCol.style.width = newColumnWidth.toString() + "%";
+        newCol.style.float = 'left';
+        newCol.style.margin = "10px";
+        newCol.style.height = "inherit";
+        newCol.style.minHeight = "30px";
+        newCol.style.backgroundColor = "red";
+        document.getElementById('notebook-container').appendChild(newCol);
 
     }
 
@@ -538,6 +572,19 @@ define([  //dependencies
 	}
 
     function load_ipython_extension() {
+        $(IPython.toolbar.add_buttons_group([
+            IPython.keyboard_manager.actions.register({
+                'help'   : 'Add Column',
+                'icon'    : 'fa-columns',
+                'handler': function() {
+                    add_column();
+                    // setTimeout(function () {
+                    //     $('#zenmode-toggle-btn').blur();
+                    // }, 500);
+                },
+            }, 'add-column', 'column'),
+        ], 'add-column-btn-grp')).find('.btn').attr('id', 'add-column-btn');
+        $("#maintoolbar-container").prepend($('#add-column-btn-grp'));
         update_styling();
         Jupyter.notebook.restore_checkpoint('checkpoint') 
         return Jupyter.notebook.config.loaded.then(initialize);
