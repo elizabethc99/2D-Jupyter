@@ -33,6 +33,8 @@ define([  //dependencies
     var CodeCell = codecell.CodeCell; 
     var Notebook = notebook.Notebook;
 
+    var nCols = 2; //default of 2 columns
+
     
     CodeCell._options = {
         cm_config : {
@@ -160,40 +162,6 @@ define([  //dependencies
                     }
                     
                 }
-                // //DOM collision detection?
-                // var col1 = document.getElementById("column1");
-                // var col2 = document.getElementById("column2");
-                // var thisSpatial = that.metadata.spatial;
-                // var col1Rect = col1.getBoundingClientRect();
-                // var col2Rect = col2.getBoundingClientRect();
-
-                // if(thisSpatial.left > col1Rect.left && //if collision
-                //     thisSpatial.top > col1Rect.top &&
-                //     thisSpatial.left < (col1Rect.left + col1Rect.width)
-                //     ){ 
-                //     //make cells into a single div object w/ nb container
-                //     var cell = that.element.detach();
-                //     //that.element.remove();
-                //     $(col1).append(cell);
-                //     that.metadata.column = 1;
-                //     //drag cells in order?
-                //     delete that.metadata.spatial;
-                //     that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
-                //     reindex();
-                // }
-
-                // if(thisSpatial.left > col2Rect.left && //if collision
-                //     thisSpatial.top > col2Rect.top &&
-                //     thisSpatial.left < (col2Rect.left + col2Rect.width)
-                //     ){ 
-                //     var cell = that.element.detach();
-                //     //that.element.remove();
-                //     $(col2).append(cell);
-                //     that.metadata.column = 2;
-                //     delete that.metadata.spatial;
-                //     that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
-                //     reindex(); 
-                // }
 
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
@@ -223,6 +191,18 @@ define([  //dependencies
 
         var ncells = Jupyter.notebook.ncells();
         that.metadata.index = ncells + 1;
+
+        // var cellCol = this.get_cell(selected).metadata.column;
+        // var cellIndex = this.get_cell(selected).metadata.index + 1;
+        var colCounts = countCellsinColumns();
+
+        var numPrevCells = 0;
+        var currCol = 0;
+        while(numPrevCells < that.metadata.index){
+            currCol++;
+            numPrevCells+=colCounts[currCol];
+        }
+        that.metadata.column = currCol;
 
     };
 
@@ -271,30 +251,41 @@ define([  //dependencies
         var first = indices[0];
         var last = indices[indices.length - 1];
 
+        console.log(first);
+        console.log(last);
+
         var selected = this.get_selected_index();
         var anchored = this.get_anchor_index();
 
-        if (first === 0){
+        if (first === 0 || first == Jupyter.notebook.ncells()){
             return;
         }
 
-        var tomove = this.get_cell_element(first - 1);
-        var pivot = this.get_cell_element(last);
+        // var tomove = this.get_cell_element(first - 1);
+        // var pivot = this.get_cell_element(last);
+        var tomove = this.get_cell_element(last);
+        var pivot = this.get_cell_element(first - 1);
 
         var cellCol = this.get_cell(selected).metadata.column;
         var cellIndex = this.get_cell(selected).metadata.index + 1;
         var colCounts = countCellsinColumns();
-        
-        if(!(cellCol == 2 && cellIndex == colCounts[0] + 1)){ //if the cell is at the end of col 1
-            tomove.detach();
-            pivot.after(tomove);
+
+        var numPrevCells = 0;
+        for(var i=0;i<cellCol-1;i++){
+            numPrevCells+=colCounts[i]; //num cells in previous columns
         }
 
+        if(cellIndex != (numPrevCells + 1)){ //if cell is not at top of column
+            tomove.detach();
+            pivot.before(tomove);
+        }
+        
         this.get_cell(selected-1).focus_cell();
         this.select(anchored - 1);
         this.select(selected - 1, false);
         
         reindex();
+
     };
 
     Notebook.prototype.move_selection_down = function(){
@@ -315,16 +306,21 @@ define([  //dependencies
         var cellCol = this.get_cell(selected).metadata.column;
         var cellIndex = this.get_cell(selected).metadata.index + 1;
         var colCounts = countCellsinColumns();
+
+        var numPrevCells = 0;
+        for(var i=0;i<cellCol;i++){
+            numPrevCells+=colCounts[i];
+        }
         
-        if(!(cellCol == 1 && cellIndex == colCounts[0])){ //if the cell is not at the end of col 1
+        if(cellIndex != (numPrevCells)){
             tomove.detach();
             pivot.before(tomove);
         }
-       
-        this.get_cell(selected+1).focus_cell();
-        this.select(first);
-        this.select(anchored + 1);
-        this.select(selected + 1, false);
+    
+        //this.get_cell(selected+1).focus_cell();
+        // this.select(first);
+        // this.select(anchored + 1);
+        // this.select(selected + 1, false);
 
         reindex();
     };
@@ -490,17 +486,15 @@ define([  //dependencies
     }
 
     function countCellsinColumns(){
-        var colCounts = [0,0];
+        var colCounts = [];
         var cells = Jupyter.notebook.get_cells();
         var ncells = Jupyter.notebook.ncells();
-        for (var i=0; i<ncells; i++){
-			var cell = cells[i];
-            if(cell.metadata.column == 1){
-                colCounts[0]++;
-            }
-            if(cell.metadata.column == 2){
-                colCounts[1]++;
-            }
+        for (var i=0; i<nCols; i++){
+            colCounts[i] = 0;
+        }
+        for (var j=0; j<ncells; j++){
+			var cell = cells[j];
+            colCounts[cell.metadata.column - 1]++;
         }
         return colCounts;
     }
@@ -566,6 +560,8 @@ define([  //dependencies
         newCol.style.backgroundColor = "white";
         document.getElementById('notebook-container').appendChild(newCol);
 
+        nCols++;
+
     }
 
     function initialize () {
@@ -597,9 +593,6 @@ define([  //dependencies
                 'icon'    : 'fa-columns',
                 'handler': function() {
                     add_column();
-                    // setTimeout(function () {
-                    //     $('#zenmode-toggle-btn').blur();
-                    // }, 500);
                 },
             }, 'add-column', 'column'),
         ], 'add-column-btn-grp')).find('.btn').attr('id', 'add-column-btn');
