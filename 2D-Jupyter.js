@@ -34,6 +34,7 @@ define([  //dependencies
     var Notebook = notebook.Notebook;
 
     var nCols = 2; //default of 2 columns
+    
 
     
     CodeCell._options = {
@@ -117,7 +118,6 @@ define([  //dependencies
                 delete that.metadata.spatial;
         });
         repos.mousedown( function(event) {	// drag the cell
-            //console.log(that, event);
             if(event.originalEvent.button != 0) return;   // left-click only
             //if(event.originalEvent.shiftKey) 
             event.preventDefault();  // dont select text
@@ -129,7 +129,6 @@ define([  //dependencies
             var y = event.pageY - that.element.offset().top;     // y offset
             
             function onMouseMove(event) {
-                //console.log(event);
                 if(that.element.css("position") != "absolute")   // wait till movement occurs to pull out the cell
                     that.element.css("position", 'absolute').width(800-45);  // pull out of notebook
                 that.metadata.spatial = { 	
@@ -143,12 +142,15 @@ define([  //dependencies
             repos.mouseup( function(event) {  
                 var thisSpatial = that.metadata.spatial;
                 var columns = document.getElementsByClassName("column");
+                var nbContainer = document.getElementById("notebook-container");
                 for(var c = 0; c < columns.length; c++){
                     var col = columns[c];
                     var colRect = col.getBoundingClientRect();
+                    var nbContainerRect = nbContainer.getBoundingClientRect();
                     if(thisSpatial.left > colRect.left && //if collision
                         thisSpatial.top > colRect.top &&
-                        thisSpatial.left < (colRect.left + colRect.width)
+                        thisSpatial.left < (colRect.left + colRect.width) &&
+                        thisSpatial.top < nbContainerRect.bottom
                         ){ 
                         //make cells into a single div object w/ nb container
                         var cell = that.element.detach();
@@ -188,20 +190,17 @@ define([  //dependencies
         });
         this.completer = new completer.Completer(this, this.events);
 
+        //ids column for metadata label
         var ncells = Jupyter.notebook.ncells();
         that.metadata.index = ncells + 1;
-
-        // var cellCol = this.get_cell(selected).metadata.column;
-        // var cellIndex = this.get_cell(selected).metadata.index + 1;
         var colCounts = countCellsinColumns();
-
         var numPrevCells = 0;
         var currCol = 0;
         while(numPrevCells < that.metadata.index){
             currCol++;
             numPrevCells+=colCounts[currCol];
         }
-        that.metadata.column = currCol;
+        that.metadata.column = currCol;       
 
     };
 
@@ -252,9 +251,6 @@ define([  //dependencies
         var first = indices[0];
         var last = indices[indices.length - 1];
 
-        console.log(first);
-        console.log(last);
-
         var selected = this.get_selected_index();
         var anchored = this.get_anchor_index();
 
@@ -262,8 +258,6 @@ define([  //dependencies
             return;
         }
 
-        // var tomove = this.get_cell_element(first - 1);
-        // var pivot = this.get_cell_element(last);
         var tomove = this.get_cell_element(last);
         var pivot = this.get_cell_element(first - 1);
 
@@ -455,18 +449,7 @@ define([  //dependencies
         this.undelete_backup_stack.push(undelete_backup);
         this.set_dirty(true);
 
-         //cell indexing
-         var cells = Jupyter.notebook.get_cells();
-         var ncells = Jupyter.notebook.ncells();
-         for (var i=0; i<ncells; i++){
-             var cell = cells[i];
-             var index = Jupyter.notebook.find_cell_index(cell);
-             cell.metadata.index = index;
-            
-             var box = document.getElementsByClassName("repos")[i]; 
-             $(box)[0].innerHTML = "";
-             $(box).append(index + 1);
-          }
+        reindex();
 
         return this;
     };
@@ -477,7 +460,7 @@ define([  //dependencies
 		for (var i=0; i<ncells; i++){
 			var cell = cells[i];
             var index = Jupyter.notebook.find_cell_index(cell);
-            cell.metadata.index = index;
+            cell.metadata.index = index + 1; //indexing starts at 1
 
             
             var box = document.getElementsByClassName("repos")[i]; 
@@ -501,8 +484,7 @@ define([  //dependencies
     }
 
     function update_styling() {
-        var cells = Jupyter.notebook.get_cells();
-        nCols = cells[0].metadata.numColumns;
+        nCols = Jupyter.notebook.metadata.columns;
 
         var newColumnWidth = 100/nCols - 2;
         var newNbContainerWidth = 500*nCols + 50;
@@ -519,7 +501,7 @@ define([  //dependencies
         for(var c = 0; c < nCols; c++){
             var newCol = document.createElement('div');   
             newCol.classList.add("column");
-            newCol.id = "newCol" + (c+1).toString();
+            newCol.id = "column" + (c+1).toString();
             newCol.style.width = newColumnWidth.toString() + "%";
             newCol.style.float = 'left';
             newCol.style.margin = "10px";
@@ -527,52 +509,14 @@ define([  //dependencies
             newCol.style.minHeight = "30px";
             newCol.style.backgroundColor = "white";
             document.getElementById('notebook-container').appendChild(newCol);
-            
         }
-
-        // for(var i=0;i<cells.length;i++){
-        //     //var cells = Jupyter.notebook.get_cells();
-        //     var cell = Jupyter.notebook.get_cells()[i];
-        //     var col = cell.metadata.column;
-        //     var columns = document.getElementsByClassName("column");
-        //     cell.element.detach();
-        //     $(columns[col - 1]).append(cell.element);
-        //     //$(columns[col]).append(cell);
-
-        //     // var cell = that.element.detach();
-        //     // //that.element.remove();
-        //     // $(col).append(cell);
-
-
-        // }
-
-        // var cln1 = document.createElement('div');
-        // cln1.classList.add("column");
-        // cln1.id = "column1";
-        // cln1.style.width = "49%";
-        // cln1.style.float = 'left';
-        // cln1.style.height = "inherit";
-        // cln1.style.minHeight = "30px";
-        // cln1.style.backgroundColor = "white";
-        // document.getElementById('notebook-container').appendChild(cln1);
-
-        // var cln2 = document.createElement('div');
-        // cln2.classList.add("column");
-        // cln2.id = "column2";
-        // cln2.style.width = "49%";
-        // cln2.style.float = 'right';
-        // cln2.style.height = "inherit";
-        // cln2.style.minHeight = "30px";
-        // cln2.style.backgroundColor = "white";
-        // document.getElementById('notebook-container').appendChild(cln2);
-
 
     }
 
     function add_column(){
         var numColumns = document.getElementsByClassName("column").length;
         numColumns++;
-        
+
         var newColumnWidth = 100/numColumns - 2;
         var newNbContainerWidth = 500*numColumns + 50;
         document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
@@ -585,11 +529,10 @@ define([  //dependencies
             columns[c].style.width =  newColumnWidth.toString() + "%"
         }
 
-
         //adding new column
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
-        newCol.id = "newCol" + numColumns.toString();
+        newCol.id = "column" + numColumns.toString();
         newCol.style.width = newColumnWidth.toString() + "%";
         newCol.style.float = 'left';
         newCol.style.margin = "10px";
@@ -599,22 +542,24 @@ define([  //dependencies
         document.getElementById('notebook-container').appendChild(newCol);
 
         nCols++;
-
-        var cells = Jupyter.notebook.get_cells();
-        cells[0].metadata.numColumns = nCols;
-        console.log(nCols);
+        Jupyter.notebook.metadata.columns = nCols;
 
     }
 
     function delete_column(){
-        var columns = document.getElementsByClassName("column");
+        var columns = document.getElementsByClassName("column"); 
         var lastColumn = columns[nCols-1];
-        var cells = lastColumn.getElementsByClassName("cell");
-        for(var c=0; c<cells.length; c++){
-            cells[c].remove();
-            columns[nCols-2].appendChild(cells[c]);
-        }
-        console.log(cells);
+
+        //placing cells in last column to second to last column
+        // var cells = lastColumn.getElementsByClassName("cell"); 
+        // console.log(cells);
+        // for(var c=0; c<cells.length; c++){
+        //     var cell = cells[c];
+        //     //cells[c].metadata.column = nCols - 2;
+        //     var temp = (cells[c]).remove();
+        //     columns[nCols-2].append(cell);
+            
+        // }
         lastColumn.remove();
         nCols--;
 
@@ -630,12 +575,13 @@ define([  //dependencies
             columns[c].style.width =  newColumnWidth.toString() + "%"
         }
 
-        var cells = Jupyter.notebook.get_cells();
-        cells[0].metadata.numColumns = nCols;
+        Jupyter.notebook.metadata.columns = nCols;
+
+
     }
 
-    function initialize () {
-        //intial run index
+    function initialize () {       
+        //set intial run indexes
 		var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
 
@@ -650,7 +596,16 @@ define([  //dependencies
                 $(box).append(index + 1);
             }
             
-		 }
+		}
+
+        var newNotebook = false;
+        if(!Jupyter.notebook.metadata.columns || Jupyter.notebook.metadata.columns === null){
+            newNotebook = true;
+            Jupyter.notebook.metadata.columns = 1;
+        }
+        nCols = Jupyter.notebook.metadata.columns;
+
+        update_styling();
  
 	}
 
@@ -671,9 +626,8 @@ define([  //dependencies
                 },
             }, 'delete-column', 'column'),
         ], 'add-column-btn-grp')).find('.btn').attr('id', 'add-column-btn');
-        $("#maintoolbar-container").prepend($('#add-column-btn-grp'));
+        $("#maintoolbar-container").append($('#add-column-btn-grp'));
 
-        update_styling();
         Jupyter.notebook.restore_checkpoint('checkpoint') 
         return Jupyter.notebook.config.loaded.then(initialize);
 
