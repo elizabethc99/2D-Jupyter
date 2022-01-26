@@ -223,8 +223,7 @@ define([  //dependencies
         // Append to the end of function:  CodeCell.prototype.fromJSON = function (data) {
         // Restores spatial positions on notebook file load.
         //
-        var col1 = document.getElementById("column1");
-        var col2 = document.getElementById("column2");
+        //restores position if not in column
         if(data.metadata.spatial) {
         	this.element.css("position", 'absolute').width(800-45);  // pull out of notebook
 			this.element.css("zIndex", data.metadata.spatial.zIndex);
@@ -232,9 +231,9 @@ define([  //dependencies
 				CodeCell.zIndexCount = data.metadata.spatial.zIndex;
         	this.element.offset(data.metadata.spatial);  // set absolute position
         }
-    
+        
+        //restores position if in column
         var cells = Jupyter.notebook.get_cells();
-
         for(var i=0;i<cells.length;i++){
             var cell = cells[i];
             var col = cell.metadata.column;
@@ -245,6 +244,7 @@ define([  //dependencies
         //////////////////////////////
     };
 
+    
     Notebook.prototype.move_selection_up = function(){
         // actually will move the cell before the selection, after the selection
         var indices = this.get_selected_cells_indices();
@@ -376,6 +376,17 @@ define([  //dependencies
                 // not appropriate. The selection logic should be handled by the
                 // caller of the the top level insert_cell methods.
                 this.set_dirty(true);
+                  //restores position if in column
+                var columns = document.getElementsByClassName("column");
+                $(columns[0]).append(cell.element);
+                // var cells = Jupyter.notebook.get_cells();
+                // for(var i=0;i<cells.length;i++){
+                //     var cell = cells[i];
+                //     var col = cell.metadata.column;
+                //     var columns = document.getElementsByClassName("column");
+                //     $(columns[col - 1]).append(cell.element);
+
+                // }
             }
         }
         return cell;
@@ -510,6 +521,8 @@ define([  //dependencies
             newCol.style.backgroundColor = "white";
             document.getElementById('notebook-container').appendChild(newCol);
         }
+
+        
 
     }
 
