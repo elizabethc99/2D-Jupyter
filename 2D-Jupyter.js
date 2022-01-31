@@ -299,7 +299,7 @@ define([  //dependencies
         var pivot = this.get_cell_element(first);
 
         var cellCol = this.get_cell(selected).metadata.column;
-        var cellIndex = this.get_cell(selected).metadata.index + 1;
+        var cellIndex = this.get_cell(selected).metadata.index;
         var colCounts = countCellsinColumns();
 
         var numPrevCells = 0;
@@ -564,15 +564,14 @@ define([  //dependencies
         var lastColumn = columns[nCols-1];
 
         //placing cells in last column to second to last column
-        // var cells = lastColumn.getElementsByClassName("cell"); 
-        // console.log(cells);
-        // for(var c=0; c<cells.length; c++){
-        //     var cell = cells[c];
-        //     //cells[c].metadata.column = nCols - 2;
-        //     var temp = (cells[c]).remove();
-        //     columns[nCols-2].append(cell);
-            
-        // }
+        var lastColNumCells = lastColumn.getElementsByClassName("cell").length; 
+        //console.log(cells.length);
+        var cells = Jupyter.notebook.get_cells().slice(-lastColNumCells);
+        console.log(cells);
+        cells.forEach(cell => 
+            $(columns[nCols-2]).append(cell.element)
+        )
+
         lastColumn.remove();
         nCols--;
 
