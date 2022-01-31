@@ -376,9 +376,8 @@ define([  //dependencies
                 // not appropriate. The selection logic should be handled by the
                 // caller of the the top level insert_cell methods.
                 this.set_dirty(true);
-                  //restores position if in column
-                var columns = document.getElementsByClassName("column");
-                $(columns[0]).append(cell.element);
+                //restores position if in column
+                
                 // var cells = Jupyter.notebook.get_cells();
                 // for(var i=0;i<cells.length;i++){
                 //     var cell = cells[i];
