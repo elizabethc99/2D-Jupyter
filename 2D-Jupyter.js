@@ -565,13 +565,18 @@ define([  //dependencies
 
         //placing cells in last column to second to last column
         var lastColNumCells = lastColumn.getElementsByClassName("cell").length; 
-        //console.log(cells.length);
-        var cells = Jupyter.notebook.get_cells().slice(-lastColNumCells);
-        console.log(cells);
-        cells.forEach(cell => 
-            $(columns[nCols-2]).append(cell.element)
-        )
-
+        if(lastColNumCells > 0){
+            var cells = Jupyter.notebook.get_cells().slice(-lastColNumCells);
+            console.log(cells);
+            cells.forEach(cell =>
+                $(columns[nCols-2]).append(cell.element)
+            )
+            cells.forEach(cell =>
+                cell.metadata.column = nCols-1
+            )
+            
+        }
+        
         lastColumn.remove();
         nCols--;
 
