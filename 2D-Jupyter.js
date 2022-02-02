@@ -141,28 +141,57 @@ define([  //dependencies
 
             repos.mouseup( function(event) {  
                 var thisSpatial = that.metadata.spatial;
-                var columns = document.getElementsByClassName("column");
-                var nbContainer = document.getElementById("notebook-container");
-                for(var c = 0; c < columns.length; c++){
-                    var col = columns[c];
-                    var colRect = col.getBoundingClientRect();
-                    var nbContainerRect = nbContainer.getBoundingClientRect();
-                    if(thisSpatial.left > colRect.left && //if collision
-                        thisSpatial.top > colRect.top &&
-                        thisSpatial.left < (colRect.left + colRect.width) &&
-                        thisSpatial.top < nbContainerRect.bottom
-                        ){ 
-                        //make cells into a single div object w/ nb container
-                        var cell = that.element.detach();
-                        $(col).append(cell);
-                        that.metadata.column = c + 1;
-                        //drag cells in order?
+                var allCells = document.getElementsByClassName("cell");
+                for(var c = 0; c < allCells.length; c++){
+                    var cell = allCells[c];
+                    var cellRect = cell.getBoundingClientRect();
+                    if(thisSpatial.left > cellRect.left && //if collision
+                        thisSpatial.top > cellRect.top &&
+                        thisSpatial.left < (cellRect.left + cellRect.width) &&
+                        thisSpatial.top < cellRect.bottom)
+                    {
+                        console.log("cell collision");
+                        var cellElements = Jupyter.notebook.get_cells();
+                        var newCol = cellElements[c].metadata.column;
+                        var currCell = that.element.detach();
+                        $(cell).after(currCell);
                         delete that.metadata.spatial;
+                        that.metadata.column = newCol;
                         that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
                         reindex();
                     }
+                
+
+
+                //places cells at end of columns
+                // var columns = document.getElementsByClassName("column");
+                // var nbContainer = document.getElementById("notebook-container");
+                // var inColumn = false;
+                // for(var c = 0; c < columns.length; c++){
+                //     var col = columns[c];
+                //     var colRect = col.getBoundingClientRect();
+                //     var nbContainerRect = nbContainer.getBoundingClientRect();
+                //     if(thisSpatial.left > colRect.left && //if collision
+                //         thisSpatial.top > colRect.top &&
+                //         thisSpatial.left < (colRect.left + colRect.width) &&
+                //         thisSpatial.top < nbContainerRect.bottom
+                //         ){ 
+                //         inColumn = true;
+                //         //make cells into a single div object w/ nb container
+                //         var cell = that.element.detach();
+                //         $(col).append(cell);
+                //         that.metadata.column = c + 1;
+                //         //drag cells in order?
+                //         delete that.metadata.spatial;
+                //         that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                //         reindex();
+                //     }
                     
                 }
+                if(that.metadata.spatial){
+                    delete that.metadata.column;
+                }
+
 
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
@@ -301,7 +330,7 @@ define([  //dependencies
         var cellCol = this.get_cell(selected).metadata.column;
         var cellIndex = this.get_cell(selected).metadata.index;
         var colCounts = countCellsinColumns();
-
+        
         var numPrevCells = 0;
         for(var i=0;i<cellCol;i++){
             numPrevCells+=colCounts[i];
