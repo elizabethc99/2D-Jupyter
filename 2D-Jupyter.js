@@ -341,15 +341,17 @@ define([  //dependencies
         var cellIndex = this.get_cell(selected).metadata.index;
         var colCounts = countCellsinColumns();
         
-        var numPrevCells = 0;
-        for(var i=0;i<cellCol;i++){
-            numPrevCells+=colCounts[i];
-        }
+        // var numPrevCells = 0;
+        // for(var i=0;i<cellCol;i++){
+        //     numPrevCells+=colCounts[i];
+        // }
         
-        if(cellIndex != (numPrevCells)){
+        // if(cellIndex != (numPrevCells)){
+        //     tomove.detach();
+        //     pivot.before(tomove);
+        // }
             tomove.detach();
             pivot.before(tomove);
-        }
     
         //this.get_cell(selected+1).focus_cell();
         // this.select(first);
@@ -405,6 +407,10 @@ define([  //dependencies
                 cell = new cellmod.UnrecognizedCell(cell_options);
             }
 
+            // var prevCell = Jupyter.notebook.get_cell_element(index-2);
+            // console.log(prevCell);
+            // console.log(cell.metadata.column);
+
             if(this._insert_element_at_index(cell.element,index)) {
                 reindex();
                 cell.render();
@@ -415,20 +421,40 @@ define([  //dependencies
                 // not appropriate. The selection logic should be handled by the
                 // caller of the the top level insert_cell methods.
                 this.set_dirty(true);
-                //restores position if in column
-                
-                // var cells = Jupyter.notebook.get_cells();
-                // for(var i=0;i<cells.length;i++){
-                //     var cell = cells[i];
-                //     var col = cell.metadata.column;
-                //     var columns = document.getElementsByClassName("column");
-                //     $(columns[col - 1]).append(cell.element);
-
-                // }
+             
             }
         }
         return cell;
 
+    };
+
+    Notebook.prototype._insert_element_at_index = function(element, index){
+        if (element === undefined){
+            return false;
+        }
+
+        var ncells = this.ncells();
+
+        if (ncells === 0) {
+            // special case append if empty
+            this.container.append(element);
+        } else if ( ncells === index ) {
+            // special case append it the end, but not empty
+            this.get_cell_element(index-1).after(element);
+        } else if (this.is_valid_cell_index(index)) {
+            // otherwise always somewhere to append to
+            this.get_cell_element(index-1).after(element);
+        } else {
+            return false;
+        }
+        
+        this.undelete_backup_stack.map(function (undelete_backup) {
+            if (index < undelete_backup.index) {
+                undelete_backup.index += 1;
+            }
+        });
+        this.set_dirty(true);
+        return true;
     };
 
     Notebook.prototype.delete_cells = function(indices) {
