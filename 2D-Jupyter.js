@@ -141,6 +141,7 @@ define([  //dependencies
 
             repos.mouseup( function(event) {  
                 var thisSpatial = that.metadata.spatial;
+                // var inColumn = false;
                 
                 //places cells at end of columns
                 var columns = document.getElementsByClassName("column");
@@ -158,7 +159,7 @@ define([  //dependencies
                         ){ 
                         //attach to column if column is empty
                         if((countCellsinColumns()[c]) == 0){ 
-                            inColumn = true;
+                            // inColumn = true;
                             //make cells into a single div object w/ nb container
                             var cell = that.element.detach();
                             $(col).append(cell);
@@ -233,7 +234,12 @@ define([  //dependencies
             currCol++;
             numPrevCells+=colCounts[currCol];
         }
-        that.metadata.column = currCol;       
+        that.metadata.column = currCol;
+        
+        if(Jupyter.notebook.ncells() == 0){
+            var column = document.getElementById("column1");
+            $(column).append(that.element);
+        }
 
     };
 
@@ -493,6 +499,7 @@ define([  //dependencies
         this.set_dirty(true);
 
         reindex();
+        console.log(Jupyter.notebook.ncells());
 
         return this;
     };
@@ -553,8 +560,6 @@ define([  //dependencies
             newCol.style.backgroundColor = "white";
             document.getElementById('notebook-container').appendChild(newCol);
         }
-
-        
 
     }
 
@@ -647,15 +652,15 @@ define([  //dependencies
             
 		}
 
+        //draw columns
         var newNotebook = false;
         if(!Jupyter.notebook.metadata.columns || Jupyter.notebook.metadata.columns === null){
             newNotebook = true;
             Jupyter.notebook.metadata.columns = 1;
         }
         nCols = Jupyter.notebook.metadata.columns;
-
         update_styling();
- 
+
 	}
 
     function load_ipython_extension() {
