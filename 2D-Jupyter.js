@@ -300,19 +300,22 @@ define([  //dependencies
         var tomove = this.get_cell_element(last);
         var pivot = this.get_cell_element(first - 1);
 
-        var cellCol = this.get_cell(selected).metadata.column;
-        var cellIndex = this.get_cell(selected).metadata.index + 1;
-        var colCounts = countCellsinColumns();
+        // var cellCol = this.get_cell(selected).metadata.column;
+        // var cellIndex = this.get_cell(selected).metadata.index + 1;
+        // var colCounts = countCellsinColumns();
 
-        var numPrevCells = 0;
-        for(var i=0;i<cellCol-1;i++){
-            numPrevCells+=colCounts[i]; //num cells in previous columns
-        }
+        // var numPrevCells = 0;
+        // for(var i=0;i<cellCol-1;i++){
+        //     numPrevCells+=colCounts[i]; //num cells in previous columns
+        // }
 
-        if(cellIndex != (numPrevCells + 1)){ //if cell is not at top of column
-            tomove.detach();
-            pivot.before(tomove);
-        }
+        // if(cellIndex != (numPrevCells + 1)){ //if cell is not at top of column
+        //     tomove.detach();
+        //     pivot.before(tomove);
+        // }
+
+        tomove.detach();
+        pivot.before(tomove);
         
         // this.get_cell(selected-1).focus_cell();
         // this.select(anchored - 1);
