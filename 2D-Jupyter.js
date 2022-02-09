@@ -299,21 +299,7 @@ define([  //dependencies
 
         var tomove = this.get_cell_element(last);
         var pivot = this.get_cell_element(first - 1);
-
-        // var cellCol = this.get_cell(selected).metadata.column;
-        // var cellIndex = this.get_cell(selected).metadata.index + 1;
-        // var colCounts = countCellsinColumns();
-
-        // var numPrevCells = 0;
-        // for(var i=0;i<cellCol-1;i++){
-        //     numPrevCells+=colCounts[i]; //num cells in previous columns
-        // }
-
-        // if(cellIndex != (numPrevCells + 1)){ //if cell is not at top of column
-        //     tomove.detach();
-        //     pivot.before(tomove);
-        // }
-
+        
         tomove.detach();
         pivot.before(tomove);
         
@@ -399,10 +385,6 @@ define([  //dependencies
                 console.log("Unrecognized cell type: ", type, cellmod);
                 cell = new cellmod.UnrecognizedCell(cell_options);
             }
-
-            // var prevCell = Jupyter.notebook.get_cell_element(index-2);
-            // console.log(prevCell);
-            // console.log(cell.metadata.column);
 
             if(this._insert_element_at_index(cell.element,index)) {
                 reindex();
@@ -518,7 +500,6 @@ define([  //dependencies
         this.set_dirty(true);
 
         reindex();
-        console.log(Jupyter.notebook.ncells());
 
         return this;
     };
@@ -623,7 +604,6 @@ define([  //dependencies
         var lastColNumCells = lastColumn.getElementsByClassName("cell").length; 
         if(lastColNumCells > 0){
             var cells = Jupyter.notebook.get_cells().slice(-lastColNumCells);
-            console.log(cells);
             cells.forEach(cell =>
                 $(columns[nCols-2]).append(cell.element)
             )
