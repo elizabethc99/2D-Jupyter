@@ -323,7 +323,6 @@ define([  //dependencies
     };
 
     Notebook.prototype.move_selection_down = function(){
-        // actually will move the cell after the selection, before the selection
         var indices = this.get_selected_cells_indices();
         var first = indices[0];
         var last = indices[indices.length - 1];
@@ -334,25 +333,16 @@ define([  //dependencies
         if(!this.is_valid_cell_index(last + 1)){
             return;
         }
-        var tomove = this.get_cell_element(last + 1);
-        var pivot = this.get_cell_element(first);
+        if(last == Jupyter.notebook.ncells){ //if at bottom of nb
+            return;
+        }
 
-        var cellCol = this.get_cell(selected).metadata.column;
-        var cellIndex = this.get_cell(selected).metadata.index;
-        var colCounts = countCellsinColumns();
-        
-        // var numPrevCells = 0;
-        // for(var i=0;i<cellCol;i++){
-        //     numPrevCells+=colCounts[i];
-        // }
-        
-        // if(cellIndex != (numPrevCells)){
-        //     tomove.detach();
-        //     pivot.before(tomove);
-        // }
-            tomove.detach();
-            pivot.before(tomove);
-    
+        var tomove = this.get_cell_element(first);
+        var pivot = this.get_cell_element(last + 1);
+
+        tomove.detach();
+        pivot.after(tomove);
+
         //this.get_cell(selected+1).focus_cell();
         // this.select(first);
         // this.select(anchored + 1);
