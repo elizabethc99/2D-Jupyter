@@ -8,7 +8,6 @@ Installation
 -----
 Follow the instructions at the link below to install Jupyter extensions:
 https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/install.html
-
 or if you are using an Anaconda installation: 
 https://docs.anaconda.com/anaconda/user-guide/tasks/use-jupyter-notebook-extensions/#obtaining-the-extensions
 
