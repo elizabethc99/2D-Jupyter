@@ -236,6 +236,7 @@ define([  //dependencies
         }
         that.metadata.column = currCol;
         
+        //attaches first cell of nb to first column
         if(Jupyter.notebook.ncells() == 0){
             var column = document.getElementById("column1");
             $(column).append(that.element);
@@ -332,7 +333,7 @@ define([  //dependencies
         tomove.detach();
         pivot.after(tomove);
 
-        //this.get_cell(selected+1).focus_cell();
+        // this.get_cell(selected+1).focus_cell();
         // this.select(first);
         // this.select(anchored + 1);
         // this.select(selected + 1, false);
@@ -533,6 +534,32 @@ define([  //dependencies
         return colCounts;
     }
 
+    function createColumnToolbar(){
+        var toolbar = document.createElement('div');
+        toolbar.style.width = '100%';
+        toolbar.style.height = '35px';
+        toolbar.style.border = "1.5px solid black";
+
+        var input = document.createElement("input");
+        input.type = "text";
+        input.className = "column-label"; // set the CSS class
+        toolbar.appendChild(input); // put it into the DOM
+
+
+        // var toolbarAddCell = IPython.keyboard_manager.actions.register({
+        //     'help'   : 'Add Cell',
+        //     'icon'    : 'fa-columns',
+        //     'handler': function() {
+        //         add_column();
+        //     },
+        // }, 'add-cell', 'column-toolbar');
+        // toolbar.append(toolbarAddCell);
+        
+
+
+        return toolbar;
+    }
+
     function update_styling() {
         nCols = Jupyter.notebook.metadata.columns;
 
@@ -558,6 +585,8 @@ define([  //dependencies
             newCol.style.height = "inherit";
             newCol.style.minHeight = "30px";
             newCol.style.backgroundColor = "white";
+            var toolbar = createColumnToolbar();
+            newCol.prepend(toolbar);
             document.getElementById('notebook-container').appendChild(newCol);
         }
 
@@ -670,16 +699,16 @@ define([  //dependencies
                 'handler': function() {
                     add_column();
                 },
-            }, 'add-column', 'column'),
+            }, 'add-column', 'jupyter-notebook'),
             IPython.keyboard_manager.actions.register({
                 'help'   : 'Delete Column',
                 'icon'    : 'fa-times',
                 'handler': function() {
                     delete_column();
                 },
-            }, 'delete-column', 'column'),
-        ], 'add-column-btn-grp')).find('.btn').attr('id', 'add-column-btn');
-        $("#maintoolbar-container").append($('#add-column-btn-grp'));
+            }, 'delete-column', 'jupyter-notebook'),
+        ], 'add-delete-columns')).find('.btn').attr('id', 'add-column-btn');
+        $("#maintoolbar-container").append($('#add-delete-columns'));
 
         Jupyter.notebook.restore_checkpoint('checkpoint') 
         return Jupyter.notebook.config.loaded.then(initialize);
