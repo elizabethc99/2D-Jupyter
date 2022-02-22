@@ -31,6 +31,7 @@ define([  //dependencies
 
     var Cell = cell.Cell;
     var CodeCell = codecell.CodeCell; 
+    var TextCell = textcell.TextCell;
     var Notebook = notebook.Notebook;
 
     var nCols = 2; //default of 2 columns
@@ -56,6 +57,157 @@ define([  //dependencies
             'magic_r'             :{'reg':['^%%R']},
             'magic_text/x-cython' :{'reg':['^%%cython']},
         },
+    };
+
+
+    TextCell.prototype.create_element = function () {
+        Cell.prototype.create_element.apply(this, arguments);
+        var that = this;
+
+        var cell = $("<div>").addClass('cell text_cell');
+        cell.attr('tabindex','2');
+
+        var ncells = Jupyter.notebook.ncells();
+        var initialIndex = ncells + 1;
+        var repos = $('<div>' + initialIndex + '</div>').addClass("repos").width('2%').css('backgroundColor', "lightgrey").css('cursor', 'move');  // the widget for dragging a cell
+        cell.css('backgroundColor', 'rgba(255, 255, 255, 0.8)');  	// transparency
+        repos.dblclick( function(event) {   // double-click = put back into notebook
+            that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+            delete that.metadata.spatial;
+    });
+    repos.mousedown( function(event) {	// drag the cell
+        if(event.originalEvent.button != 0) return;   // left-click only
+        //if(event.originalEvent.shiftKey) 
+        event.preventDefault();  // dont select text
+        if(that.element.css("zIndex") != CodeCell.zIndexCount)
+            that.element.css("zIndex", ++CodeCell.zIndexCount);  // Move to front
+        if(that.metadata.spatial)
+            that.metadata.spatial.zIndex = CodeCell.zIndexCount;
+        var x = event.pageX - that.element.offset().left;    // x offset
+        var y = event.pageY - that.element.offset().top;     // y offset
+        
+        function onMouseMove(event) {
+            if(that.element.css("position") != "absolute")   // wait till movement occurs to pull out the cell
+                that.element.css("position", 'absolute').width(800-45);  // pull out of notebook
+            that.metadata.spatial = { 	
+                    left: event.pageX - x,   		
+                    top: event.pageY - y,			
+                    zIndex: CodeCell.zIndexCount }; 
+            that.element.offset(that.metadata.spatial);    // set absolute position
+        }
+        document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
+
+        repos.mouseup( function(event) {  
+            var thisSpatial = that.metadata.spatial;
+            // var inColumn = false;
+            
+            //places cells at end of columns
+            var columns = document.getElementsByClassName("column");
+            var nbContainer = document.getElementById("notebook-container");
+            for(var c = 0; c < columns.length; c++){
+                var col = columns[c];
+                var colRect = col.getBoundingClientRect();
+                var nbContainerRect = nbContainer.getBoundingClientRect();
+
+                //if collision with a column
+                if(thisSpatial.left > colRect.left && 
+                    thisSpatial.top > colRect.top &&
+                    thisSpatial.left < (colRect.left + colRect.width) &&
+                    thisSpatial.top < nbContainerRect.bottom
+                    ){ 
+                    //attach to column if column is empty
+                    if((countCellsinColumns()[c]) == 0){ 
+                        // inColumn = true;
+                        //make cells into a single div object w/ nb container
+                        var cell = that.element.detach();
+                        $(col).append(cell);
+                        that.metadata.column = c + 1;
+                        //drag cells in order?
+                        delete that.metadata.spatial;
+                        that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                        reindex();
+                    }
+                    else{ //otherwise insert after cell
+                        var allCells = document.getElementsByClassName("cell");
+                        for(var c = 0; c < allCells.length; c++){
+                            var cell = allCells[c];
+                            var cellRect = cell.getBoundingClientRect();
+                            if(thisSpatial.left > cellRect.left && //if collision
+                                thisSpatial.top > cellRect.top &&
+                                thisSpatial.left < (cellRect.left + cellRect.width) &&
+                                thisSpatial.top < cellRect.bottom)
+                            {
+                                var cellElements = Jupyter.notebook.get_cells();
+                                var newCol = cellElements[c].metadata.column;
+                                var currCell = that.element.detach();
+                                $(cell).after(currCell);
+                                delete that.metadata.spatial;
+                                that.metadata.column = newCol;
+                                that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+                                reindex();
+                            }
+                        }
+
+                    }
+                }
+                
+            }
+
+                if(that.metadata.spatial){
+                    delete that.metadata.column;
+                }
+                document.removeEventListener('mousemove', onMouseMove);
+                repos.off(event);
+            });
+        });
+
+        cell.append(repos); 		
+
+        var prompt = $('<div/>').addClass('prompt input_prompt');
+        cell.append(prompt);
+        var inner_cell = $('<div/>').addClass('inner_cell');
+        this.celltoolbar = new celltoolbar.CellToolbar({
+            cell: this, 
+            notebook: this.notebook});
+        inner_cell.append(this.celltoolbar.element);
+        var input_area = $('<div/>').addClass('input_area');
+
+
+        this.code_mirror = new CodeMirror(input_area.get(0), this._options.cm_config);
+        // In case of bugs that put the keyboard manager into an inconsistent state,
+        // ensure KM is enabled when CodeMirror is focused:
+        this.code_mirror.on('focus', function () {
+            if (that.keyboard_manager) {
+                that.keyboard_manager.enable();
+            }
+            that.code_mirror.setOption('readOnly', !that.is_editable());
+        });
+        this.code_mirror.on('keydown', $.proxy(this.handle_keyevent,this))
+        // The tabindex=-1 makes this div focusable.
+        var render_area = $('<div/>').addClass('text_cell_render rendered_html')
+            .attr('tabindex','-1');
+        inner_cell.append(input_area).append(render_area);
+        cell.append(inner_cell);
+        this.element = cell;
+        this.inner_cell = inner_cell;
+
+        //ids column for metadata label
+        var ncells = Jupyter.notebook.ncells();
+        that.metadata.index = ncells + 1;
+        var colCounts = countCellsinColumns();
+        var numPrevCells = 0;
+        var currCol = 0;
+        while(numPrevCells < that.metadata.index){
+            currCol++;
+            numPrevCells+=colCounts[currCol];
+        }
+        that.metadata.column = currCol;
+        
+        //attaches first cell of nb to first column
+        if(Jupyter.notebook.ncells() == 0){
+            var column = document.getElementById("column1");
+            $(column).append(that.element);
+        }
     };
 
     CodeCell.prototype.create_element = function () {
@@ -86,6 +238,7 @@ define([  //dependencies
             notebook: this.notebook});
         inner_cell.append(this.celltoolbar.element);
         var input_area = $('<div/>').addClass('input_area').attr("aria-label", i18n.msg._("Edit code here"));
+        
         this.code_mirror = new CodeMirror(input_area.get(0), this._options.cm_config);
         // In case of bugs that put the keyboard manager into an inconsistent state,
         // ensure KM is enabled when CodeMirror is focused:
@@ -284,6 +437,28 @@ define([  //dependencies
         //////////////////////////////
     };
 
+    Notebook.prototype.cells_to_markdown = function (indices) {
+        if (indices === undefined) {
+            indices = this.get_selected_cells_indices();
+        }
+
+        for(var i=0; i < indices.length; i++) {
+            this.to_markdown(indices[i]);
+            reindex();
+        }
+     };
+
+     Notebook.prototype.cells_to_code = function (indices) {
+        if (indices === undefined){
+            indices = this.get_selected_cells_indices();
+        }
+        
+        for (var i=0; i <indices.length; i++){
+            this.to_code(indices[i]);
+            reindex();
+        }
+    };
+
     
     Notebook.prototype.move_selection_up = function(){
         // actually will move the cell before the selection, after the selection
@@ -304,10 +479,7 @@ define([  //dependencies
         tomove.detach();
         pivot.before(tomove);
         
-        // this.get_cell(selected-1).focus_cell();
-        // this.select(anchored - 1);
-        // this.select(selected - 1, false);
-        
+
         reindex();
 
     };
@@ -423,7 +595,7 @@ define([  //dependencies
         } else {
             return false;
         }
-        
+    
         this.undelete_backup_stack.map(function (undelete_backup) {
             if (index < undelete_backup.index) {
                 undelete_backup.index += 1;
@@ -510,13 +682,17 @@ define([  //dependencies
 		var ncells = Jupyter.notebook.ncells();
 		for (var i=0; i<ncells; i++){
 			var cell = cells[i];
-            var index = Jupyter.notebook.find_cell_index(cell);
-            cell.metadata.index = index + 1; //indexing starts at 1
+            if(cell.metadata.columnHeader != true){
 
             
-            var box = document.getElementsByClassName("repos")[i]; 
-            $(box)[0].innerHTML = "";
-            $(box).append(index + 1);
+                var index = Jupyter.notebook.find_cell_index(cell);
+                cell.metadata.index = index + 1; //indexing starts at 1
+
+                
+                var box = document.getElementsByClassName("repos")[i]; 
+                $(box)[0].innerHTML = "";
+                $(box).append(cell.metadata.index);
+            }
 		 }
     }
 
@@ -536,25 +712,42 @@ define([  //dependencies
 
     function createColumnToolbar(){
         var toolbar = document.createElement('div');
-        toolbar.style.width = '100%';
-        toolbar.style.height = '35px';
-        toolbar.style.border = "1.5px solid black";
 
-        var input = document.createElement("input");
-        input.type = "text";
-        input.className = "column-label"; // set the CSS class
-        toolbar.appendChild(input); // put it into the DOM
+        var cell_options = {
+            events: Jupyter.notebook.events, 
+            config: Jupyter.notebook.config, 
+            keyboard_manager: Jupyter.notebook.keyboard_manager, 
+            notebook: Jupyter.notebook,
+            tooltip: Jupyter.notebook.tooltip
+        };
 
+        var buttons = document.createElement('div');
+        buttons.style.width = '100%';
+        buttons.style.height = '35px';
+        buttons.style.border = "1.5px solid black";
 
-        // var toolbarAddCell = IPython.keyboard_manager.actions.register({
-        //     'help'   : 'Add Cell',
-        //     'icon'    : 'fa-columns',
-        //     'handler': function() {
-        //         add_column();
-        //     },
-        // }, 'add-cell', 'column-toolbar');
-        // toolbar.append(toolbarAddCell);
-        
+        var addCell = document.createElement('button');
+        addCell.classList.add("btn");
+        addCell.classList.add("btn-default");
+        addCell.style.float = "left";
+        addCell.innerHTML = '<i class = "fa fa-plus"></i>';
+
+        var addColumn = document.createElement('button');
+        addColumn.classList.add("btn");
+        addColumn.classList.add("btn-default");
+        addColumn.style.float = "right";
+        addColumn.innerHTML = '<i class = "fa fa-plus-square-o "></i>';
+
+        var delColumn = document.createElement('button');
+        delColumn.classList.add("btn");
+        delColumn.classList.add("btn-default");
+        delColumn.style.float = "right";
+        delColumn.innerHTML = '<i class = "fa fa-minus-square-o"></i>';
+
+        buttons.append(delColumn);
+        buttons.append(addColumn);
+        buttons.append(addCell);
+        toolbar.append(buttons);
 
 
         return toolbar;
@@ -587,6 +780,7 @@ define([  //dependencies
             newCol.style.backgroundColor = "white";
             var toolbar = createColumnToolbar();
             newCol.prepend(toolbar);
+
             document.getElementById('notebook-container').appendChild(newCol);
         }
 
@@ -618,6 +812,30 @@ define([  //dependencies
         newCol.style.height = "inherit";
         newCol.style.minHeight = "30px";
         newCol.style.backgroundColor = "white";
+
+        var toolbar = createColumnToolbar();
+        newCol.prepend(toolbar);
+
+
+
+        var cell_options = {
+            events: Jupyter.notebook.events, 
+            config: Jupyter.notebook.config, 
+            keyboard_manager: Jupyter.notebook.keyboard_manager, 
+            notebook: Jupyter.notebook,
+            tooltip: Jupyter.notebook.tooltip
+        };
+
+        // var newlabelCell = new textcell.MarkdownCell(cell_options);
+        // // var repos = newlabelCell.childNodes; 
+        // // console.log(repos);
+        // //newlabelCell.removeChild(repos);
+        // $(newCol).prepend(newlabelCell.element);
+
+        var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
+        newCodeCell.set_input_prompt();
+        newCodeCell.metadata.column = nCols + 1;
+        $(newCol).append(newCodeCell.element);
         document.getElementById('notebook-container').appendChild(newCol);
 
         nCols++;
@@ -695,14 +913,14 @@ define([  //dependencies
         $(IPython.toolbar.add_buttons_group([
             IPython.keyboard_manager.actions.register({
                 'help'   : 'Add Column',
-                'icon'    : 'fa-columns',
+                'icon'    : 'fa-plus-square-o ',
                 'handler': function() {
                     add_column();
                 },
             }, 'add-column', 'jupyter-notebook'),
             IPython.keyboard_manager.actions.register({
                 'help'   : 'Delete Column',
-                'icon'    : 'fa-times',
+                'icon'    : 'fa-minus-square-o ',
                 'handler': function() {
                     delete_column();
                 },
