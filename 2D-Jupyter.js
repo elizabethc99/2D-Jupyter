@@ -347,13 +347,17 @@ define([  //dependencies
                     }
                     
                 }
-
                 if(that.metadata.spatial){
+                    console.log("free cell");
+                    that.element[0].classList.add("ignore_cell");
+                    that.metadata.index = Jupyter.notebook.ncells() + 1;
+                    reindex();
                     delete that.metadata.column;
                 }
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
             });
+
         });
         //prompt.ondragstart = function() { return false; };
         //prompt_container.append(repos).append(prompt).append(run_this_cell);
@@ -677,9 +681,26 @@ define([  //dependencies
         return this;
     };
 
+    //TODO: Ignore scratch cells
+
+    Notebook.prototype.execute_cell_range = function (start, end) {
+        this.command_mode();
+        var indices = [];
+        var cell;
+        for (var i=start; i<end; i++) {
+            cell = this.get_cell(i);
+            if(cell.metadata.column){
+                indices.push(i);
+            }
+        }
+        this.execute_cells(indices);
+    };
+
+
     function reindex(){
         var cells = Jupyter.notebook.get_cells();
 		var ncells = Jupyter.notebook.ncells();
+        console.log(ncells);
 		for (var i=0; i<ncells; i++){
 			var cell = cells[i];
             if(cell.metadata.columnHeader != true){
@@ -833,6 +854,8 @@ define([  //dependencies
         // $(newCol).prepend(newlabelCell.element);
 
         var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
+        console.log(newCodeCell.element[0].classList);
+        newCodeCell.element[0].classList.add("ignore_cell");
         newCodeCell.set_input_prompt();
         newCodeCell.metadata.column = nCols + 1;
         $(newCol).append(newCodeCell.element);
