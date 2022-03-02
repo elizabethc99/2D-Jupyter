@@ -353,6 +353,10 @@ define([  //dependencies
                     // that.metadata.index = Jupyter.notebook.ncells() + 1;
                     // reindex();
                     delete that.metadata.column;
+                    var cell = that.element.detach();
+                    $(nbContainer).append(cell)
+                    reindex();
+                    cell[0].getElementsByClassName("repos")[0].innerHTML = "";
                 }
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
@@ -706,9 +710,12 @@ define([  //dependencies
             var index = Jupyter.notebook.find_cell_index(cell);
             cell.metadata.index = index + 1; //indexing starts at 1
 
-            var box = document.getElementsByClassName("repos")[i]; 
-            $(box)[0].innerHTML = "";
-            $(box).append(cell.metadata.index);
+            if(cell.metadata.column){
+                var box = document.getElementsByClassName("repos")[i]; 
+                $(box)[0].innerHTML = "";
+                $(box).append(cell.metadata.index);
+            }
+            
             
             
 		 }
@@ -761,7 +768,6 @@ define([  //dependencies
 
         buttons.append(addCell);
         toolbar.append(buttons);
-
 
         return toolbar;
     }
