@@ -702,8 +702,7 @@ define([  //dependencies
 		var ncells = Jupyter.notebook.ncells();
 		for (var i=0; i<ncells; i++){
 			var cell = cells[i];
-    
-
+            
             var index = Jupyter.notebook.find_cell_index(cell);
             cell.metadata.index = index + 1; //indexing starts at 1
 
@@ -729,7 +728,7 @@ define([  //dependencies
         return colCounts;
     }
 
-    function createColumnToolbar(){
+    function createColumnToolbar(column){
         var toolbar = document.createElement('div');
 
         var cell_options = {
@@ -750,43 +749,18 @@ define([  //dependencies
         addCell.classList.add("btn-default");
         addCell.style.float = "left";
         addCell.innerHTML = '<i class = "fa fa-plus"></i>';
-
-        var addColumn = document.createElement('button');
-        addColumn.classList.add("btn");
-        addColumn.classList.add("btn-default");
-        addColumn.style.float = "right";
-        addColumn.innerHTML = '<i class = "fa fa-plus-square-o "></i>';
-
-        var delColumn = document.createElement('button');
-        delColumn.classList.add("btn");
-        delColumn.classList.add("btn-default");
-        delColumn.style.float = "right";
-        delColumn.innerHTML = '<i class = "fa fa-minus-square-o"></i>';
+        addCell.onclick = function(){
+            var columns = document.getElementsByClassName("column");
+            var currCol = columns[column - 1];
+            var cellsInCol = currCol.getElementsByClassName("cell");
+            var lastCell = cellsInCol[cellsInCol.length - 1];
+            var lastIndex = lastCell.getElementsByClassName("repos")[0].innerHTML;
+            Jupyter.notebook.insert_cell_at_index('code', lastIndex);
+        };
 
 
-        var columnLabel = new textcell.MarkdownCell(cell_options);
-        columnLabel.metadata.label = true;
-        var numCols = document.getElementsByClassName("column").length;
-        columnLabel.metadata.column = numCols + 1;
-
-        var repos = columnLabel.element[0].childNodes[0]; 
-        columnLabel.element[0].removeChild(repos);
-  
-
-        var dummyrepos = document.createElement('div');
-        dummyrepos.classList.add("repos");
-        dummyrepos.innerHTML = "";
-        columnLabel.element[0].prepend(dummyrepos);
-        columnLabel.element[0].append(addColumn);
-        columnLabel.element[0].append(delColumn);
-        columnLabel.element[0].prepend(addCell);
-
-        columnLabel.element[0].style.border = "1.5px solid black";
-
-        $(toolbar).prepend(columnLabel.element);
-
-
-        //toolbar.append(buttons);
+        buttons.append(addCell);
+        toolbar.append(buttons);
 
 
         return toolbar;
@@ -845,6 +819,7 @@ define([  //dependencies
             columns[c].style.width =  newColumnWidth.toString() + "%"
         }
 
+        var columnNumber = numColumns;
         //adding new column
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
@@ -856,7 +831,7 @@ define([  //dependencies
         newCol.style.minHeight = "30px";
         newCol.style.backgroundColor = "white";
 
-        var toolbar = createColumnToolbar();
+        var toolbar = createColumnToolbar(columnNumber);
         newCol.prepend(toolbar);
 
 
@@ -869,11 +844,6 @@ define([  //dependencies
             tooltip: Jupyter.notebook.tooltip
         };
 
-        // var newlabelCell = new textcell.MarkdownCell(cell_options);
-        // // var repos = newlabelCell.childNodes; 
-        // // console.log(repos);
-        // //newlabelCell.removeChild(repos);
-        // $(newCol).prepend(newlabelCell.element);
 
         var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
        
