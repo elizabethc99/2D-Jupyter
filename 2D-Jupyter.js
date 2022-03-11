@@ -59,7 +59,6 @@ define([  //dependencies
         },
     };
 
-
     TextCell.prototype.create_element = function () {
         Cell.prototype.create_element.apply(this, arguments);
         var that = this;
@@ -348,10 +347,6 @@ define([  //dependencies
                     
                 }
                 if(that.metadata.spatial){
-                    // console.log("free cell");
-                    // that.element[0].classList.add("ignore_cell");
-                    // that.metadata.index = Jupyter.notebook.ncells() + 1;
-                    // reindex();
                     delete that.metadata.column;
                     var cell = that.element.detach();
                     $(nbContainer).append(cell)
@@ -757,16 +752,77 @@ define([  //dependencies
         addCell.style.float = "left";
         addCell.innerHTML = '<i class = "fa fa-plus"></i>';
         addCell.onclick = function(){
-            var columns = document.getElementsByClassName("column");
-            var currCol = columns[column - 1];
-            var cellsInCol = currCol.getElementsByClassName("cell");
-            var lastCell = cellsInCol[cellsInCol.length - 1];
-            var lastIndex = lastCell.getElementsByClassName("repos")[0].innerHTML;
-            Jupyter.notebook.insert_cell_at_index('code', lastIndex);
+            if(column == 0){ //if first column
+                Jupyter.notebook.insert_cell_at_index('code', 0);
+            }
+            else{ 
+                var columns = document.getElementsByClassName("column");
+                var colIndex = $(this).parents()[2].id;
+                colIndex = colIndex.replace('column', '');
+                var currCol = columns[colIndex - 1];
+                //var currCol = columns[column - 1];
+                var cellsInCol = currCol.getElementsByClassName("cell");
+                if(cellsInCol.length == 0){ //if column is empty
+                    var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
+                    newCodeCell.set_input_prompt();
+                    newCodeCell.metadata.column = column;
+                    currCol = columns[column - 1];
+                    $(currCol).append(newCodeCell.element);
+                    
+                }
+                else{
+                    var lastCell = cellsInCol[cellsInCol.length - 1];
+                    var lastIndex = lastCell.getElementsByClassName("repos")[0].innerHTML;
+                    Jupyter.notebook.insert_cell_at_index('code', lastIndex);
+                }
+            }
+            
         };
-
-
         buttons.append(addCell);
+
+        var moveColRight = document.createElement('button');
+        moveColRight.classList.add("btn");
+        moveColRight.classList.add("btn-default");
+        moveColRight.style.float = "right";
+        moveColRight.innerHTML = '<i class = "fa fa-arrow-right"></i>';
+        moveColRight.onclick = function(){
+            var colIndex = $(this).parents()[2].id;
+            colIndex = colIndex.replace('column', '');
+            var columns = document.getElementsByClassName("column");
+            if(parseInt(colIndex) < columns.length){
+                var currCol = columns[colIndex - 1];
+                var nextCol = columns[colIndex];
+                $(currCol).insertAfter(nextCol);
+                var increment = parseInt(colIndex) + 1;
+                currCol.id = "column" + increment;
+                nextCol.id = "column" + colIndex;
+                reindex();
+            }
+        }
+        buttons.append(moveColRight);
+
+        var moveColLeft = document.createElement('button');
+        moveColLeft.classList.add("btn");
+        moveColLeft.classList.add("btn-default");
+        moveColLeft.style.float = "right";
+        moveColLeft.innerHTML = '<i class = "fa fa-arrow-left"></i>';
+        moveColLeft.onclick = function(){
+            var colIndex = $(this).parents()[2].id; //curr col
+            colIndex = colIndex.replace('column', '');
+            if(parseInt(colIndex) > 1){
+                var columns = document.getElementsByClassName("column");
+                var currCol = columns[colIndex - 1]; 
+                var prevCol = columns[colIndex - 2];
+                $(prevCol).insertAfter(currCol);
+                var increment = parseInt(colIndex) - 1;
+                currCol.id = "column" + increment;
+                prevCol.id = "column" + colIndex;
+                reindex();
+
+            }
+        }
+        buttons.append(moveColLeft);
+
         toolbar.append(buttons);
 
         return toolbar;
@@ -798,11 +854,12 @@ define([  //dependencies
             newCol.style.minHeight = "30px";
             newCol.style.backgroundColor = "white";
 
-            var toolbar = createColumnToolbar();
-            console.log(toolbar);
-            //newCol.prepend(toolbar);
-
             document.getElementById('notebook-container').appendChild(newCol);
+            var colIndex = newCol.id;
+            colIndex = colIndex.replace('column', '');
+
+            var toolbar = createColumnToolbar(colIndex);
+            newCol.prepend(toolbar);
         }
 
        
@@ -837,7 +894,10 @@ define([  //dependencies
         newCol.style.minHeight = "30px";
         newCol.style.backgroundColor = "white";
 
-        var toolbar = createColumnToolbar(columnNumber);
+        var colIndex = newCol.id;
+        colIndex = colIndex.replace('column', '');
+        var toolbar = createColumnToolbar(colIndex);
+        //var toolbar = createColumnToolbar(columnNumber);
         newCol.prepend(toolbar);
 
 
@@ -866,19 +926,6 @@ define([  //dependencies
     function delete_column(){
         var columns = document.getElementsByClassName("column"); 
         var lastColumn = columns[nCols-1];
-
-        // //placing cells in last column to second to last column
-        // var lastColNumCells = lastColumn.getElementsByClassName("cell").length; 
-        // if(lastColNumCells > 0){
-        //     var cells = Jupyter.notebook.get_cells().slice(-lastColNumCells);
-        //     cells.forEach(cell =>
-        //         $(columns[nCols-2]).append(cell.element)
-        //     )
-        //     cells.forEach(cell =>
-        //         cell.metadata.column = nCols-1
-        //     )
-            
-        // }
         
         lastColumn.remove();
         nCols--;
