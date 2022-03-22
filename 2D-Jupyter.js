@@ -35,6 +35,8 @@ define([  //dependencies
     var Notebook = notebook.Notebook;
 
     var nCols = 2; //default of 2 columns
+
+    var colCellCounts = [];
     
 
     
@@ -237,6 +239,7 @@ define([  //dependencies
             notebook: this.notebook});
         inner_cell.append(this.celltoolbar.element);
         var input_area = $('<div/>').addClass('input_area').attr("aria-label", i18n.msg._("Edit code here"));
+        input_area.attr("style", "margin:5px");
         
         this.code_mirror = new CodeMirror(input_area.get(0), this._options.cm_config);
         // In case of bugs that put the keyboard manager into an inconsistent state,
@@ -252,7 +255,8 @@ define([  //dependencies
         $(this.code_mirror.getInputField()).attr("spellcheck", "false");
         inner_cell.append(input_area);
         prompt_container.append(prompt).append(run_this_cell);
-        input.append(prompt_container).append(inner_cell);
+        //input.append(prompt_container).append(inner_cell);
+        input.append(inner_cell);
 
         var output = $('<div></div>');
         //cell.append(input).append(output); //REPLACED WITH BELOW
@@ -284,9 +288,14 @@ define([  //dependencies
                 if(that.element.css("position") != "absolute")   // wait till movement occurs to pull out the cell
                     that.element.css("position", 'absolute').width(800-45);  // pull out of notebook
                 that.metadata.spatial = { 	
-                        left: event.pageX - x,   		
-                        top: event.pageY - y,			
-                        zIndex: CodeCell.zIndexCount }; 
+                    left: event.pageX - x,   		
+                    top: event.pageY - y,			
+                    zIndex: CodeCell.zIndexCount }; 
+
+                if(that.metadata.column){
+                    colCellCounts[that.metadata.column - 1]--;
+                    delete that.metadata.column;
+                }
                 that.element.offset(that.metadata.spatial);    // set absolute position
             }
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
@@ -309,9 +318,11 @@ define([  //dependencies
                         thisSpatial.left < (colRect.left + colRect.width) &&
                         thisSpatial.top < nbContainerRect.bottom
                         ){ 
+                        that.element.css("background-color", "white");
+                        console.log(countCellsinColumns()[c]);
+
                         //attach to column if column is empty
-                        if((countCellsinColumns()[c]) == 0){ 
-                            // inColumn = true;
+                        if((colCellCounts[c]) == 0){ 
                             //make cells into a single div object w/ nb container
                             var cell = that.element.detach();
                             $(col).append(cell);
@@ -323,6 +334,7 @@ define([  //dependencies
                         }
                         else{ //otherwise insert after cell
                             var allCells = document.getElementsByClassName("cell");
+                            console.log("single cell");
                             for(var c = 0; c < allCells.length; c++){
                                 var cell = allCells[c];
                                 var cellRect = cell.getBoundingClientRect();
@@ -347,6 +359,7 @@ define([  //dependencies
                     
                 }
                 if(that.metadata.spatial){
+                    console.log(colCellCounts);
                     delete that.metadata.column;
                     var cell = that.element.detach();
                     $(nbContainer).append(cell)
@@ -369,12 +382,12 @@ define([  //dependencies
         //
         /////////////////////////////////////////////////////*/
 
-
         this.element = cell;
         this.output_area = new outputarea.OutputArea({
             config: this.config,
             selector: output,
             prompt_area: true,
+            //prompt_area: false,
             events: this.events,
             keyboard_manager: this.keyboard_manager,
         });
@@ -383,12 +396,11 @@ define([  //dependencies
         //ids column for metadata label
         var ncells = Jupyter.notebook.ncells();
         that.metadata.index = ncells + 1;
-        var colCounts = countCellsinColumns();
         var numPrevCells = 0;
         var currCol = 0;
         while(numPrevCells < that.metadata.index){
             currCol++;
-            numPrevCells+=colCounts[currCol];
+            numPrevCells+=colCellCounts[currCol];
         }
         that.metadata.column = currCol;
         
@@ -721,17 +733,18 @@ define([  //dependencies
         var cells = Jupyter.notebook.get_cells();
         var ncells = Jupyter.notebook.ncells();
         for (var i=0; i<nCols; i++){
-            colCounts[i] = 0;
+            colCellCounts[i] = 0;
         }
         for (var j=0; j<ncells; j++){
 			var cell = cells[j];
-            colCounts[cell.metadata.column - 1]++;
+            colCellCounts[cell.metadata.column - 1]++;
         }
-        return colCounts;
+        return colCellCounts;
     }
 
     function createColumnToolbar(column){
         var toolbar = document.createElement('div');
+        toolbar.style.backgroundColor = "white";
 
         var cell_options = {
             events: Jupyter.notebook.events, 
@@ -760,13 +773,12 @@ define([  //dependencies
                 var colIndex = $(this).parents()[2].id;
                 colIndex = colIndex.replace('column', '');
                 var currCol = columns[colIndex - 1];
-                //var currCol = columns[column - 1];
                 var cellsInCol = currCol.getElementsByClassName("cell");
                 if(cellsInCol.length == 0){ //if column is empty
                     var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
                     newCodeCell.set_input_prompt();
                     newCodeCell.metadata.column = column;
-                    currCol = columns[column - 1];
+                    currCol = columns[colIndex - 1];
                     $(currCol).append(newCodeCell.element);
                     
                 }
@@ -832,7 +844,7 @@ define([  //dependencies
         nCols = Jupyter.notebook.metadata.columns;
 
         var newColumnWidth = 100/nCols - 2;
-        var newNbContainerWidth = 500*nCols + 50;
+        var newNbContainerWidth = 900*nCols + 50;
 
         document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
         document.getElementById('notebook').style.overflowX = "visible";
@@ -840,6 +852,7 @@ define([  //dependencies
         document.getElementById('notebook-container').style.height = 'inherit';
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         document.getElementById('notebook-container').style.backgroundColor = "transparent";
+        document.getElementById('notebook-container').style.display = "flex";
         document.getElementById('notebook-container').style.boxShadow = null;
        
 
@@ -852,7 +865,7 @@ define([  //dependencies
             newCol.style.margin = "10px";
             newCol.style.height = "inherit";
             newCol.style.minHeight = "30px";
-            newCol.style.backgroundColor = "white";
+            newCol.style.backgroundColor = "rgba(255,255,255,0.5)";
 
             document.getElementById('notebook-container').appendChild(newCol);
             var colIndex = newCol.id;
@@ -871,7 +884,7 @@ define([  //dependencies
         numColumns++;
 
         var newColumnWidth = 100/numColumns - 2;
-        var newNbContainerWidth = 500*numColumns + 50;
+        var newNbContainerWidth = 900*numColumns + 50;
         document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
         
         //restyling existing columns
@@ -892,7 +905,7 @@ define([  //dependencies
         newCol.style.margin = "10px";
         newCol.style.height = "inherit";
         newCol.style.minHeight = "30px";
-        newCol.style.backgroundColor = "white";
+        newCol.style.backgroundColor = "rgba(255,255,255,0.5)";
 
         var colIndex = newCol.id;
         colIndex = colIndex.replace('column', '');
@@ -931,7 +944,7 @@ define([  //dependencies
         nCols--;
 
         var newColumnWidth = 100/nCols - 2;
-        var newNbContainerWidth = 500*nCols + 50;
+        var newNbContainerWidth = 700*nCols + 50;
         document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
 
         //restyling existing columns
