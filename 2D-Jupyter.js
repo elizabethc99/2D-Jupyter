@@ -273,6 +273,8 @@ define([  //dependencies
                 that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
                 delete that.metadata.spatial;
         });
+
+    
         repos.mousedown( function(event) {	// drag the cell
             if(event.originalEvent.button != 0) return;   // left-click only
             //if(event.originalEvent.shiftKey) 
@@ -283,11 +285,30 @@ define([  //dependencies
                 that.metadata.spatial.zIndex = CodeCell.zIndexCount;
             var x = event.pageX - that.element.offset().left;    // x offset
             var y = event.pageY - that.element.offset().top;     // y offset
-            
+        
+            var scrollVertical = function (step) {
+                var site = document.getElementById("site");
+                var scrollY = $(site).scrollTop();
+                $(site).scrollTop(scrollY + step);
+                if (!stop) {
+                    setTimeout(function () { scrollVertical(step) }, 20);
+                }
+            }
+
+            var scrollHorizontal = function (step) {
+                var site = document.getElementById("site");
+                var scrollX = $(site).scrollLeft();
+                $(site).scrollLeft(scrollX + step);
+                if (!stop) {
+                    setTimeout(function () {scrollHorizontal(step)}, 20);
+                }
+            }
+
             function onMouseMove(event) {
                 if(that.element.css("position") != "absolute")   // wait till movement occurs to pull out the cell
                     that.element.css("position", 'absolute').width(800-45);  // pull out of notebook
-                that.metadata.spatial = { 	
+               
+                    that.metadata.spatial = { 	
                     left: event.pageX - x,   		
                     top: event.pageY - y,			
                     zIndex: CodeCell.zIndexCount }; 
@@ -297,10 +318,39 @@ define([  //dependencies
                     delete that.metadata.column;
                 }
                 that.element.offset(that.metadata.spatial);    // set absolute position
-            }
-            document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
+                var stop = true;
+                if (event.clientY < 150) {
+                    stop = false;
+                    scrollVertical(-5)
 
+                }
+        
+                if (event.clientY > ($(window).height() - 150)) {
+                    stop = false;
+                    scrollVertical(5)
+                }
+
+
+                if (event.clientX < 150) {
+                    stop = false;
+                    scrollHorizontal(-5)
+
+                }
+        
+                if (event.clientX > ($(window).width() - 150)) {
+                    stop = false;
+                    scrollHorizontal(5)
+                }
+
+            }
+
+
+
+
+            document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
+    
             repos.mouseup( function(event) {  
+                stop = true;
                 var thisSpatial = that.metadata.spatial;
                 // var inColumn = false;
                 
@@ -319,8 +369,7 @@ define([  //dependencies
                         thisSpatial.top < nbContainerRect.bottom
                         ){ 
                         that.element.css("background-color", "white");
-                        console.log(countCellsinColumns()[c]);
-
+                    
                         //attach to column if column is empty
                         if((colCellCounts[c]) == 0){ 
                             //make cells into a single div object w/ nb container
@@ -334,7 +383,6 @@ define([  //dependencies
                         }
                         else{ //otherwise insert after cell
                             var allCells = document.getElementsByClassName("cell");
-                            console.log("single cell");
                             for(var c = 0; c < allCells.length; c++){
                                 var cell = allCells[c];
                                 var cellRect = cell.getBoundingClientRect();
@@ -359,7 +407,6 @@ define([  //dependencies
                     
                 }
                 if(that.metadata.spatial){
-                    console.log(colCellCounts);
                     delete that.metadata.column;
                     var cell = that.element.detach();
                     $(nbContainer).append(cell)
@@ -852,7 +899,7 @@ define([  //dependencies
         document.getElementById('notebook-container').style.height = 'inherit';
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         document.getElementById('notebook-container').style.backgroundColor = "transparent";
-        document.getElementById('notebook-container').style.display = "flex";
+        //document.getElementById('notebook-container').style.display = "flex";
         document.getElementById('notebook-container').style.boxShadow = null;
        
 
@@ -905,7 +952,7 @@ define([  //dependencies
         newCol.style.margin = "10px";
         newCol.style.height = "inherit";
         newCol.style.minHeight = "30px";
-        newCol.style.backgroundColor = "rgba(255,255,255,0.5)";
+        newCol.style.backgroundColor = "rgba(255,255,255,1)";
 
         var colIndex = newCol.id;
         colIndex = colIndex.replace('column', '');
