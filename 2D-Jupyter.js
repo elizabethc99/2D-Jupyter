@@ -1,4 +1,4 @@
-define([  //dependencies
+define([ 
     'require',
     'jquery',
     'base/js/namespace',
@@ -12,7 +12,7 @@ define([  //dependencies
     'base/js/i18n',
     'notebook/js/outputarea',
     'notebook/js/completer',
-], function(   //dependencies passed to function in same order
+], function( 
     requireJS,
     $,
     Jupyter,
@@ -27,7 +27,7 @@ define([  //dependencies
     outputarea,
     completer
 ) {
-    "use strict"; //strict mode
+    "use strict";
 
     var Cell = cell.Cell;
     var CodeCell = codecell.CodeCell; 
@@ -37,8 +37,16 @@ define([  //dependencies
     var nCols = 2; //default of 2 columns
 
     var colCellCounts = [];
-    
 
+    var cell_options = {
+        events: Jupyter.notebook.events, 
+        config: Jupyter.notebook.config, 
+        keyboard_manager: Jupyter.notebook.keyboard_manager, 
+        notebook: Jupyter.notebook,
+        tooltip: Jupyter.notebook.tooltip
+    };
+    
+    
     
     CodeCell._options = {
         cm_config : {
@@ -121,21 +129,16 @@ define([  //dependencies
             if (event.clientY < 150) {
                 stop = false;
                 scrollVertical(-10)
-
             }
     
             if (event.clientY > ($(window).height() - 150)) {
                 stop = false;
                 scrollVertical(10)
             }
-
-
             if (event.clientX < 150) {
                 stop = false;
                 scrollHorizontal(-10)
-
             }
-    
             if (event.clientX > ($(window).width() - 150)) {
                 stop = false;
                 scrollHorizontal(10)
@@ -822,14 +825,10 @@ define([  //dependencies
                 $(box)[0].innerHTML = "";
                 $(box).append(cell.metadata.index);
             }
-            
-            
-            
 		 }
     }
 
     function countCellsinColumns(){
-        var colCounts = [];
         var cells = Jupyter.notebook.get_cells();
         var ncells = Jupyter.notebook.ncells();
         for (var i=0; i<nCols; i++){
@@ -845,14 +844,6 @@ define([  //dependencies
     function createColumnToolbar(column){
         var toolbar = document.createElement('div');
         toolbar.style.backgroundColor = "white";
-
-        var cell_options = {
-            events: Jupyter.notebook.events, 
-            config: Jupyter.notebook.config, 
-            keyboard_manager: Jupyter.notebook.keyboard_manager, 
-            notebook: Jupyter.notebook,
-            tooltip: Jupyter.notebook.tooltip
-        };
 
         var buttons = document.createElement('div');
         buttons.style.width = '100%';
@@ -940,6 +931,7 @@ define([  //dependencies
         return toolbar;
     }
 
+
     function update_styling() {
         nCols = Jupyter.notebook.metadata.columns;
 
@@ -952,21 +944,11 @@ define([  //dependencies
         document.getElementById('notebook-container').style.height = 'inherit';
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         document.getElementById('notebook-container').style.backgroundColor = "transparent";
-        //document.getElementById('notebook-container').style.display = "flex";
         document.getElementById('notebook-container').style.boxShadow = null;
        
 
         for(var c = 0; c < nCols; c++){
-            var newCol = document.createElement('div');   
-            newCol.classList.add("column");
-            newCol.id = "column" + (c+1).toString();
-            newCol.style.width = newColumnWidth.toString() + "%";
-            newCol.style.float = 'left';
-            newCol.style.margin = "10px";
-            newCol.style.height = "inherit";
-            newCol.style.minHeight = "30px";
-            newCol.style.backgroundColor = "rgba(255,255,255,0.5)";
-
+            var newCol = createNewColumn((c+1), newColumnWidth);
             document.getElementById('notebook-container').appendChild(newCol);
             var colIndex = newCol.id;
             colIndex = colIndex.replace('column', '');
@@ -979,10 +961,7 @@ define([  //dependencies
 
     }
 
-    function add_column(){
-        var numColumns = document.getElementsByClassName("column").length;
-        numColumns++;
-
+    function restyleColumns(numColumns){
         var newColumnWidth = 100/numColumns - 2;
         var newNbContainerWidth = 900*numColumns + 50;
         document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
@@ -995,8 +974,12 @@ define([  //dependencies
             columns[c].style.width =  newColumnWidth.toString() + "%"
         }
 
-        var columnNumber = numColumns;
-        //adding new column
+        return newColumnWidth;
+
+    
+    }
+
+    function createNewColumn(numColumns, newColumnWidth){
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
         newCol.id = "column" + numColumns.toString();
@@ -1006,26 +989,27 @@ define([  //dependencies
         newCol.style.height = "inherit";
         newCol.style.minHeight = "30px";
         newCol.style.backgroundColor = "rgba(255,255,255,1)";
+        
+        return newCol;
+    }
+
+    function add_column(){
+        var numColumns = document.getElementsByClassName("column").length;
+        numColumns++;
+
+        //restyle existing columns
+        var newColumnWidth = restyleColumns(numColumns);
+
+        //create new column
+        var newCol = createNewColumn(numColumns, newColumnWidth)
 
         var colIndex = newCol.id;
         colIndex = colIndex.replace('column', '');
         var toolbar = createColumnToolbar(colIndex);
-        //var toolbar = createColumnToolbar(columnNumber);
         newCol.prepend(toolbar);
 
 
-
-        var cell_options = {
-            events: Jupyter.notebook.events, 
-            config: Jupyter.notebook.config, 
-            keyboard_manager: Jupyter.notebook.keyboard_manager, 
-            notebook: Jupyter.notebook,
-            tooltip: Jupyter.notebook.tooltip
-        };
-
-
         var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
-       
         newCodeCell.set_input_prompt();
         newCodeCell.metadata.column = nCols + 1;
         $(newCol).append(newCodeCell.element);
@@ -1043,17 +1027,7 @@ define([  //dependencies
         lastColumn.remove();
         nCols--;
 
-        var newColumnWidth = 100/nCols - 2;
-        var newNbContainerWidth = 700*nCols + 50;
-        document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
-
-        //restyling existing columns
-        var columns = document.getElementsByClassName("column"); 
-        for(var c = 0; c < columns.length; c++){
-            columns[c].style.float = 'left';
-            columns[c].style.margin = "10px";
-            columns[c].style.width =  newColumnWidth.toString() + "%"
-        }
+        restyleColumns(nCols);
 
         Jupyter.notebook.metadata.columns = nCols;
 
@@ -1079,9 +1053,7 @@ define([  //dependencies
 		}
 
         //draw columns
-        var newNotebook = false;
         if(!Jupyter.notebook.metadata.columns || Jupyter.notebook.metadata.columns === null){
-            newNotebook = true;
             Jupyter.notebook.metadata.columns = 1;
         }
         nCols = Jupyter.notebook.metadata.columns;
