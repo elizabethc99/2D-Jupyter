@@ -86,8 +86,29 @@ define([  //dependencies
             that.metadata.spatial.zIndex = CodeCell.zIndexCount;
         var x = event.pageX - that.element.offset().left;    // x offset
         var y = event.pageY - that.element.offset().top;     // y offset
+
+        
+        var scrollVertical = function (step) {
+            var site = document.getElementById("site");
+            var scrollY = $(site).scrollTop();
+            $(site).scrollTop(scrollY + step);
+            if (!stop) {
+                setTimeout(function () { scrollVertical(step) }, 20);
+            }
+        }
+
+        var scrollHorizontal = function (step) {
+            var site = document.getElementById("site");
+            var scrollX = $(site).scrollLeft();
+            $(site).scrollLeft(scrollX + step);
+            if (!stop) {
+                setTimeout(function () {scrollHorizontal(step)}, 10);
+            }
+        }
+
         
         function onMouseMove(event) {
+            var stop = true;
             if(that.element.css("position") != "absolute")   // wait till movement occurs to pull out the cell
                 that.element.css("position", 'absolute').width(800-45);  // pull out of notebook
             that.metadata.spatial = { 	
@@ -95,6 +116,30 @@ define([  //dependencies
                     top: event.pageY - y,			
                     zIndex: CodeCell.zIndexCount }; 
             that.element.offset(that.metadata.spatial);    // set absolute position
+
+             
+            if (event.clientY < 150) {
+                stop = false;
+                scrollVertical(-10)
+
+            }
+    
+            if (event.clientY > ($(window).height() - 150)) {
+                stop = false;
+                scrollVertical(10)
+            }
+
+
+            if (event.clientX < 150) {
+                stop = false;
+                scrollHorizontal(-10)
+
+            }
+    
+            if (event.clientX > ($(window).width() - 150)) {
+                stop = false;
+                scrollHorizontal(10)
+            }
         }
         document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
 
@@ -156,6 +201,10 @@ define([  //dependencies
 
                 if(that.metadata.spatial){
                     delete that.metadata.column;
+                    var cell = that.element.detach();
+                    $(nbContainer).append(cell)
+                    reindex();
+                    cell[0].getElementsByClassName("repos")[0].innerHTML = "";
                 }
                 document.removeEventListener('mousemove', onMouseMove);
                 repos.off(event);
