@@ -285,6 +285,7 @@ define([  //dependencies
                 that.metadata.spatial.zIndex = CodeCell.zIndexCount;
             var x = event.pageX - that.element.offset().left;    // x offset
             var y = event.pageY - that.element.offset().top;     // y offset
+            
         
             var scrollVertical = function (step) {
                 var site = document.getElementById("site");
@@ -300,11 +301,12 @@ define([  //dependencies
                 var scrollX = $(site).scrollLeft();
                 $(site).scrollLeft(scrollX + step);
                 if (!stop) {
-                    setTimeout(function () {scrollHorizontal(step)}, 20);
+                    setTimeout(function () {scrollHorizontal(step)}, 10);
                 }
             }
 
             function onMouseMove(event) {
+                var stop = true;
                 if(that.element.css("position") != "absolute")   // wait till movement occurs to pull out the cell
                     that.element.css("position", 'absolute').width(800-45);  // pull out of notebook
                
@@ -318,29 +320,31 @@ define([  //dependencies
                     delete that.metadata.column;
                 }
                 that.element.offset(that.metadata.spatial);    // set absolute position
-                var stop = true;
+
+               
                 if (event.clientY < 150) {
                     stop = false;
-                    scrollVertical(-5)
+                    scrollVertical(-10)
 
                 }
         
                 if (event.clientY > ($(window).height() - 150)) {
                     stop = false;
-                    scrollVertical(5)
+                    scrollVertical(10)
                 }
 
 
                 if (event.clientX < 150) {
                     stop = false;
-                    scrollHorizontal(-5)
+                    scrollHorizontal(-10)
 
                 }
         
                 if (event.clientX > ($(window).width() - 150)) {
                     stop = false;
-                    scrollHorizontal(5)
+                    scrollHorizontal(10)
                 }
+                
 
             }
 
@@ -350,7 +354,7 @@ define([  //dependencies
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
     
             repos.mouseup( function(event) {  
-                stop = true;
+                //stop = true;
                 var thisSpatial = that.metadata.spatial;
                 // var inColumn = false;
                 
