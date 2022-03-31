@@ -283,6 +283,10 @@ define([  //dependencies
                 that.element.css("zIndex", ++CodeCell.zIndexCount);  // Move to front
             if(that.metadata.spatial)
                 that.metadata.spatial.zIndex = CodeCell.zIndexCount;
+            
+            //console.log(that.metadata.column);
+            countCellsinColumns();
+            //colCellCounts[that.metadata.column]--;
             var x = event.pageX - that.element.offset().left;    // x offset
             var y = event.pageY - that.element.offset().top;     // y offset
             
@@ -333,7 +337,6 @@ define([  //dependencies
                     scrollVertical(10)
                 }
 
-
                 if (event.clientX < 150) {
                     stop = false;
                     scrollHorizontal(-10)
@@ -347,8 +350,6 @@ define([  //dependencies
                 
 
             }
-
-
 
 
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
@@ -366,16 +367,20 @@ define([  //dependencies
                     var colRect = col.getBoundingClientRect();
                     var nbContainerRect = nbContainer.getBoundingClientRect();
 
+                    console.log(colRect);
+
                     //if collision with a column
                     if(thisSpatial.left > colRect.left && 
                         thisSpatial.top > colRect.top &&
-                        thisSpatial.left < (colRect.left + colRect.width) &&
-                        thisSpatial.top < nbContainerRect.bottom
+                        thisSpatial.top < colRect.bottom &&
+                        thisSpatial.left < (colRect.left + colRect.width) //&&
+                        // thisSpatial.top < nbContainerRect.bottom
                         ){ 
                         that.element.css("background-color", "white");
                     
                         //attach to column if column is empty
                         if((colCellCounts[c]) == 0){ 
+                            console.log("collision2");
                             //make cells into a single div object w/ nb container
                             var cell = that.element.detach();
                             $(col).append(cell);
