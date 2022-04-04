@@ -86,8 +86,27 @@ define([  //dependencies
             that.metadata.spatial.zIndex = CodeCell.zIndexCount;
         var x = event.pageX - that.element.offset().left;    // x offset
         var y = event.pageY - that.element.offset().top;     // y offset
+
+        var scrollVertical = function (step) {
+            var site = document.getElementById("site");
+            var scrollY = $(site).scrollTop();
+            $(site).scrollTop(scrollY + step);
+            if (!stop) {
+                setTimeout(function () { scrollVertical(step) }, 20);
+            }
+        }
+
+        var scrollHorizontal = function (step) {
+            var site = document.getElementById("site");
+            var scrollX = $(site).scrollLeft();
+            $(site).scrollLeft(scrollX + step);
+            if (!stop) {
+                setTimeout(function () {scrollHorizontal(step)}, 10);
+            }
+        }
         
         function onMouseMove(event) {
+            var stop = true;
             if(that.element.css("position") != "absolute")   // wait till movement occurs to pull out the cell
                 that.element.css("position", 'absolute').width(800-45);  // pull out of notebook
             that.metadata.spatial = { 	
@@ -95,6 +114,28 @@ define([  //dependencies
                     top: event.pageY - y,			
                     zIndex: CodeCell.zIndexCount }; 
             that.element.offset(that.metadata.spatial);    // set absolute position
+
+            if (event.clientY < 150) {
+                stop = false;
+                scrollVertical(-10)
+
+            }
+    
+            if (event.clientY > ($(window).height() - 150)) {
+                stop = false;
+                scrollVertical(10)
+            }
+
+            if (event.clientX < 150) {
+                stop = false;
+                scrollHorizontal(-10)
+
+            }
+    
+            if (event.clientX > ($(window).width() - 150)) {
+                stop = false;
+                scrollHorizontal(10)
+            }
         }
         document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
 
@@ -367,8 +408,6 @@ define([  //dependencies
                     var colRect = col.getBoundingClientRect();
                     var nbContainerRect = nbContainer.getBoundingClientRect();
 
-                    console.log(colRect);
-
                     //if collision with a column
                     if(thisSpatial.left > colRect.left && 
                         thisSpatial.top > colRect.top &&
@@ -577,11 +616,6 @@ define([  //dependencies
         tomove.detach();
         pivot.after(tomove);
 
-        // this.get_cell(selected+1).focus_cell();
-        // this.select(first);
-        // this.select(anchored + 1);
-        // this.select(selected + 1, false);
-
         reindex();
     };
 
@@ -785,7 +819,6 @@ define([  //dependencies
     }
 
     function countCellsinColumns(){
-        var colCounts = [];
         var cells = Jupyter.notebook.get_cells();
         var ncells = Jupyter.notebook.ncells();
         for (var i=0; i<nCols; i++){
@@ -801,7 +834,9 @@ define([  //dependencies
     function createColumnToolbar(column){
         var toolbar = document.createElement('div');
         toolbar.style.backgroundColor = "white";
+        toolbar.classList.add("col-toolbar");
 
+        
         var cell_options = {
             events: Jupyter.notebook.events, 
             config: Jupyter.notebook.config, 
@@ -814,6 +849,18 @@ define([  //dependencies
         buttons.style.width = '100%';
         buttons.style.height = '35px';
         buttons.style.border = "1.5px solid black";
+
+        var resize = document.createElement("div");
+        resize.classList.add("resizeMe");
+        resize.id = "resizeCol" + column;
+        resize.style.width = "20px";
+        resize.style.height = "33px"; 
+        resize.style.float = "right";
+        resize.style.backgroundColor = "grey";
+        resize.addEventListener("mousedown", resizeColumns);
+        
+        buttons.append(resize);
+
 
         var addCell = document.createElement('button');
         addCell.classList.add("btn");
@@ -873,6 +920,7 @@ define([  //dependencies
         moveColLeft.classList.add("btn");
         moveColLeft.classList.add("btn-default");
         moveColLeft.style.float = "right";
+        
         moveColLeft.innerHTML = '<i class = "fa fa-arrow-left"></i>';
         moveColLeft.onclick = function(){
             var colIndex = $(this).parents()[2].id; //curr col
@@ -891,8 +939,10 @@ define([  //dependencies
         }
         buttons.append(moveColLeft);
 
+        
         toolbar.append(buttons);
 
+    
         return toolbar;
     }
 
@@ -929,6 +979,7 @@ define([  //dependencies
 
             var toolbar = createColumnToolbar(colIndex);
             newCol.prepend(toolbar);
+
         }
 
        
@@ -948,10 +999,9 @@ define([  //dependencies
         for(var c = 0; c < columns.length; c++){
             columns[c].style.float = 'left';
             columns[c].style.margin = "10px";
-            columns[c].style.width =  newColumnWidth.toString() + "%"
+            //columns[c].style.width =  newColumnWidth.toString() + "%"
         }
 
-        var columnNumber = numColumns;
         //adding new column
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
@@ -968,8 +1018,6 @@ define([  //dependencies
         var toolbar = createColumnToolbar(colIndex);
         //var toolbar = createColumnToolbar(columnNumber);
         newCol.prepend(toolbar);
-
-
 
         var cell_options = {
             events: Jupyter.notebook.events, 
@@ -990,6 +1038,68 @@ define([  //dependencies
         nCols++;
         Jupyter.notebook.metadata.columns = nCols;
 
+    }
+
+    function resizeColumns(){
+
+        var ele = this;
+        // console.log(colIndex);
+        // console.log("resizeCol" + colIndex);
+        // var ele = document.getElementById("resizeCol" + (colIndex-1))
+        // console.log(ele);
+        console.log("clicked");
+        console.log(ele.id);
+
+        //var colIndex = $(this).parents()[2].id; //curr col
+        var colIndex = ele.id.replace('resizeCol', '');
+        console.log(colIndex);
+
+        var column = document.getElementById("column" + colIndex);
+
+
+        //ele.onclick(console.log("clicked"));
+
+        //The current position of mouse
+        let x = 0;
+        let y = 0;
+
+        // The dimension of the element
+        let w = 0;
+        let h = 0;
+
+        // Handle the mousedown event
+        // that's triggered when user drags the resizer
+        const mouseDownHandler = function (e) {
+            console.log("mouse down");
+            // Get the current mouse position
+            x = e.clientX;
+            y = e.clientY;
+
+            // Calculate the dimension of element
+            const styles = window.getComputedStyle(column);
+            w = parseInt(styles.width, 10);
+            h = parseInt(styles.height, 10);
+
+            // Attach the listeners to `document`
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+        };
+
+        const mouseMoveHandler = function (e) {
+            // How far the mouse has been moved
+            const dx = e.clientX - x;
+
+            // Adjust the dimension of element
+            column.style.width = `${w + dx}px`;
+        };
+
+        const mouseUpHandler = function () {
+            // Remove the handlers of `mousemove` and `mouseup`
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+        };
+
+        ele.addEventListener('mousedown', mouseDownHandler);
     }
 
     function delete_column(){
