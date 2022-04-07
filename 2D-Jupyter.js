@@ -37,6 +37,7 @@ define([  //dependencies
     var nCols = 2; //default of 2 columns
 
     var colCellCounts = [];
+    var colWidths = [];
     
 
     
@@ -419,7 +420,6 @@ define([  //dependencies
                     
                         //attach to column if column is empty
                         if((colCellCounts[c]) == 0){ 
-                            console.log("collision2");
                             //make cells into a single div object w/ nb container
                             var cell = that.element.detach();
                             $(col).append(cell);
@@ -856,8 +856,13 @@ define([  //dependencies
         resize.style.width = "20px";
         resize.style.height = "33px"; 
         resize.style.float = "right";
-        resize.style.backgroundColor = "grey";
+        resize.style.backgroundColor = "lightgrey";
+        resize.style.cursor =  'col-resize';
+        //resize.onclick = "resize()";
         resize.addEventListener("mousedown", resizeColumns);
+
+    
+        //resize.addEventListener("mousedown", resize());
         
         buttons.append(resize);
 
@@ -946,6 +951,50 @@ define([  //dependencies
         return toolbar;
     }
 
+    function resizeColumns(e){
+        var ele = this;
+        var colIndex = ele.id.replace('resizeCol', '');
+    
+        var column = document.getElementById("column" + colIndex);
+
+        let x, w = 0;
+        
+        x = e.clientX;
+
+        const styles = window.getComputedStyle(column);
+        w = parseInt(styles.width, 10);
+    
+       
+
+        const mouseMoveHandler = function (e) {
+            const dx = e.clientX - x;
+            if((w + dx) >= 135){
+                column.style.width = `${w + dx}px`;
+                colWidths[colIndex - 1] =  `${w + dx}px`;
+            }
+            
+            var docWidth = document.getElementById('notebook-container').style.width;
+            docWidth = parseInt(docWidth.replace('px', ''));
+            docWidth += dx;
+            console.log(docWidth);
+            if(docWidth >= 1000){
+                 //console.log((docWidth + w + dx));
+            var nbcontainer = document.getElementById('notebook-container');
+            nbcontainer.style.width = `${docWidth}px`;
+            }
+           
+        };
+
+        const mouseUpHandler = function () {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+        };
+
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+
+    }
+
     function update_styling() {
         nCols = Jupyter.notebook.metadata.columns;
 
@@ -966,7 +1015,11 @@ define([  //dependencies
             var newCol = document.createElement('div');   
             newCol.classList.add("column");
             newCol.id = "column" + (c+1).toString();
-            newCol.style.width = newColumnWidth.toString() + "%";
+            newCol.style.width = "500px";
+            //newCol.style.width = newColumnWidth.toString() + "%";
+            colWidths[c] = newColumnWidth.toString() + "%";
+            //console.log(colWidths[c])
+            //newCol.style.width = colWidths[c - 1];
             newCol.style.float = 'left';
             newCol.style.margin = "10px";
             newCol.style.height = "inherit";
@@ -992,7 +1045,7 @@ define([  //dependencies
 
         var newColumnWidth = 100/numColumns - 2;
         var newNbContainerWidth = 900*numColumns + 50;
-        document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
+        document.getElementById('notebook-container').style.width += 600 //newNbContainerWidth.toString() + "px"; //resizing nb container
         
         //restyling existing columns
         var columns = document.getElementsByClassName("column"); 
@@ -1006,7 +1059,8 @@ define([  //dependencies
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
         newCol.id = "column" + numColumns.toString();
-        newCol.style.width = newColumnWidth.toString() + "%";
+        newCol.style.width = "500px"; //newColumnWidth.toString() + "%";
+        colWidths[numColumns - 1] = newColumnWidth.toString() + "%";
         newCol.style.float = 'left';
         newCol.style.margin = "10px";
         newCol.style.height = "inherit";
@@ -1040,67 +1094,7 @@ define([  //dependencies
 
     }
 
-    function resizeColumns(){
-
-        var ele = this;
-        // console.log(colIndex);
-        // console.log("resizeCol" + colIndex);
-        // var ele = document.getElementById("resizeCol" + (colIndex-1))
-        // console.log(ele);
-        console.log("clicked");
-        console.log(ele.id);
-
-        //var colIndex = $(this).parents()[2].id; //curr col
-        var colIndex = ele.id.replace('resizeCol', '');
-        console.log(colIndex);
-
-        var column = document.getElementById("column" + colIndex);
-
-
-        //ele.onclick(console.log("clicked"));
-
-        //The current position of mouse
-        let x = 0;
-        let y = 0;
-
-        // The dimension of the element
-        let w = 0;
-        let h = 0;
-
-        // Handle the mousedown event
-        // that's triggered when user drags the resizer
-        const mouseDownHandler = function (e) {
-            console.log("mouse down");
-            // Get the current mouse position
-            x = e.clientX;
-            y = e.clientY;
-
-            // Calculate the dimension of element
-            const styles = window.getComputedStyle(column);
-            w = parseInt(styles.width, 10);
-            h = parseInt(styles.height, 10);
-
-            // Attach the listeners to `document`
-            document.addEventListener('mousemove', mouseMoveHandler);
-            document.addEventListener('mouseup', mouseUpHandler);
-        };
-
-        const mouseMoveHandler = function (e) {
-            // How far the mouse has been moved
-            const dx = e.clientX - x;
-
-            // Adjust the dimension of element
-            column.style.width = `${w + dx}px`;
-        };
-
-        const mouseUpHandler = function () {
-            // Remove the handlers of `mousemove` and `mouseup`
-            document.removeEventListener('mousemove', mouseMoveHandler);
-            document.removeEventListener('mouseup', mouseUpHandler);
-        };
-
-        ele.addEventListener('mousedown', mouseDownHandler);
-    }
+    
 
     function delete_column(){
         var columns = document.getElementsByClassName("column"); 
@@ -1109,16 +1103,21 @@ define([  //dependencies
         lastColumn.remove();
         nCols--;
 
+        //delete colWidths[nCols];
+        colWidths.length--;
+    
+
         var newColumnWidth = 100/nCols - 2;
         var newNbContainerWidth = 700*nCols + 50;
-        document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
+        //document.getElementById('notebook-container').style.width -= 500;//newNbContainerWidth.toString() + "px"; //resizing nb container
 
         //restyling existing columns
         var columns = document.getElementsByClassName("column"); 
         for(var c = 0; c < columns.length; c++){
             columns[c].style.float = 'left';
             columns[c].style.margin = "10px";
-            columns[c].style.width =  newColumnWidth.toString() + "%"
+
+            //columns[c].style.width =  newColumnWidth.toString() + "%"
         }
 
         Jupyter.notebook.metadata.columns = nCols;
