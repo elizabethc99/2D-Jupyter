@@ -326,9 +326,8 @@ define([  //dependencies
             if(that.metadata.spatial)
                 that.metadata.spatial.zIndex = CodeCell.zIndexCount;
             
-            //console.log(that.metadata.column);
             countCellsinColumns();
-            //colCellCounts[that.metadata.column]--;
+           
             var x = event.pageX - that.element.offset().left;    // x offset
             var y = event.pageY - that.element.offset().top;     // y offset
             
@@ -985,11 +984,9 @@ define([  //dependencies
             var docWidth = document.getElementById('notebook-container').style.width;
             docWidth = parseInt(docWidth.replace('px', ''));
             docWidth += dx;
-            console.log(docWidth);
             if(docWidth >= 1000){
-                 //console.log((docWidth + w + dx));
-            var nbcontainer = document.getElementById('notebook-container');
-            nbcontainer.style.width = `${docWidth}px`;
+                var nbcontainer = document.getElementById('notebook-container');
+                nbcontainer.style.width = `${docWidth}px`;
             }
            
         };
@@ -1007,7 +1004,16 @@ define([  //dependencies
     function selectColumn(){
         var ele = this;
         var colIndex = ele.id.replace('click', '');
+
+        var previousSelection = document.querySelector(".column.selected");
         var column = document.getElementById("column" + colIndex);
+
+        if(previousSelection != null && previousSelection != column){
+            var previousSelection = document.querySelector(".column.selected"); 
+            previousSelection.style.border = "";
+            previousSelection.classList.remove('selected');
+        }
+
         column.classList.toggle("selected");
         if(column.classList.contains("selected")){
             column.style.border = "5px solid green";
@@ -1030,7 +1036,6 @@ define([  //dependencies
         document.getElementById('notebook-container').style.height = 'inherit';
         document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         document.getElementById('notebook-container').style.backgroundColor = "transparent";
-        //document.getElementById('notebook-container').style.display = "flex";
         document.getElementById('notebook-container').style.boxShadow = null;
        
 
@@ -1039,10 +1044,7 @@ define([  //dependencies
             newCol.classList.add("column");
             newCol.id = "column" + (c+1).toString();
             newCol.style.width = "500px";
-            //newCol.style.width = newColumnWidth.toString() + "%";
             colWidths[c] = newColumnWidth.toString() + "%";
-            //console.log(colWidths[c])
-            //newCol.style.width = colWidths[c - 1];
             newCol.style.float = 'left';
             newCol.style.margin = "10px";
             newCol.style.height = "inherit";
@@ -1077,20 +1079,26 @@ define([  //dependencies
         for(var c = 0; c < columns.length; c++){
             columns[c].style.float = 'left';
             columns[c].style.margin = "10px";
-            //columns[c].style.width =  newColumnWidth.toString() + "%"
+            var colId = columns[c].id;
+            colId = parseInt(colId.replace("column", ""));
+            console.log(colId);
+            if(colId >= insertAfter){
+                colId++;
+                columns[c].id = "column" + colId;
+            }
             if(columns[c].classList.contains("selected")){
                 insertAfter = columns[c].id.replace("column", "");
             }
         }
 
-        console.log(insertAfter);
+        var insertAt = parseInt(insertAfter) + 1;
+
 
         //adding new column
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
-        newCol.id = "column" + numColumns.toString();
-        newCol.style.width = "500px"; //newColumnWidth.toString() + "%";
-        // colWidths[numColumns - 1] = newColumnWidth.toString() + "%";
+        newCol.id = "column" + insertAt.toString();
+        newCol.style.width = "500px"; 
         newCol.style.float = 'left';
         newCol.style.margin = "10px";
         newCol.style.height = "inherit";
@@ -1120,14 +1128,17 @@ define([  //dependencies
         $(newCol).append(newCodeCell.element);
 
 
-        var insertAfterCol = document.getElementById("column" + (insertAfter));
-        console.log(insertAfterCol);
-        insertAfterCol.after(newCol);
-        reindex();
+    
+        if(insertAfter == numColumns){
+            document.getElementById('notebook-container').appendChild(newCol);
+        }
+        else{
+            var insertAfterCol = document.getElementById("column" + (insertAfter));
+            insertAfterCol.after(newCol);
+            reindex();
+        }
 
-        //document.getElementById('notebook-container').appendChild(newCol);
-
-
+        
         nCols++;
         Jupyter.notebook.metadata.columns = nCols;
 
