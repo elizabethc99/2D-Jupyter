@@ -37,6 +37,8 @@ define([
     var nCols = 2; //default of 2 columns
 
     var colCellCounts = [];
+    var colWidths = [];
+    
 
     var cell_options = {
         events: Jupyter.notebook.events, 
@@ -95,7 +97,6 @@ define([
         var x = event.pageX - that.element.offset().left;    // x offset
         var y = event.pageY - that.element.offset().top;     // y offset
 
-        
         var scrollVertical = function (step) {
             var site = document.getElementById("site");
             var scrollY = $(site).scrollTop();
@@ -113,7 +114,6 @@ define([
                 setTimeout(function () {scrollHorizontal(step)}, 10);
             }
         }
-
         
         function onMouseMove(event) {
             var stop = true;
@@ -125,20 +125,23 @@ define([
                     zIndex: CodeCell.zIndexCount }; 
             that.element.offset(that.metadata.spatial);    // set absolute position
 
-             
             if (event.clientY < 150) {
                 stop = false;
                 scrollVertical(-10)
+
             }
     
             if (event.clientY > ($(window).height() - 150)) {
                 stop = false;
                 scrollVertical(10)
             }
+
             if (event.clientX < 150) {
                 stop = false;
                 scrollHorizontal(-10)
+
             }
+    
             if (event.clientX > ($(window).width() - 150)) {
                 stop = false;
                 scrollHorizontal(10)
@@ -335,6 +338,9 @@ define([
                 that.element.css("zIndex", ++CodeCell.zIndexCount);  // Move to front
             if(that.metadata.spatial)
                 that.metadata.spatial.zIndex = CodeCell.zIndexCount;
+            
+            countCellsinColumns();
+           
             var x = event.pageX - that.element.offset().left;    // x offset
             var y = event.pageY - that.element.offset().top;     // y offset
             
@@ -385,7 +391,6 @@ define([
                     scrollVertical(10)
                 }
 
-
                 if (event.clientX < 150) {
                     stop = false;
                     scrollHorizontal(-10)
@@ -399,8 +404,6 @@ define([
                 
 
             }
-
-
 
 
             document.addEventListener('mousemove', onMouseMove);  // use document events to allow rapid dragging outside the repos div
@@ -421,8 +424,9 @@ define([
                     //if collision with a column
                     if(thisSpatial.left > colRect.left && 
                         thisSpatial.top > colRect.top &&
-                        thisSpatial.left < (colRect.left + colRect.width) &&
-                        thisSpatial.top < nbContainerRect.bottom
+                        thisSpatial.top < colRect.bottom &&
+                        thisSpatial.left < (colRect.left + colRect.width) //&&
+                        // thisSpatial.top < nbContainerRect.bottom
                         ){ 
                         that.element.css("background-color", "white");
                     
@@ -623,11 +627,6 @@ define([
 
         tomove.detach();
         pivot.after(tomove);
-
-        // this.get_cell(selected+1).focus_cell();
-        // this.select(first);
-        // this.select(anchored + 1);
-        // this.select(selected + 1, false);
 
         reindex();
     };
@@ -844,11 +843,40 @@ define([
     function createColumnToolbar(column){
         var toolbar = document.createElement('div');
         toolbar.style.backgroundColor = "white";
+        toolbar.classList.add("col-toolbar");
+        //toolbar.classList.add("deselected");
+        toolbar.id = "columnToolbar" + column;
+
+        
+        var cell_options = {
+            events: Jupyter.notebook.events, 
+            config: Jupyter.notebook.config, 
+            keyboard_manager: Jupyter.notebook.keyboard_manager, 
+            notebook: Jupyter.notebook,
+            tooltip: Jupyter.notebook.tooltip
+        };
 
         var buttons = document.createElement('div');
         buttons.style.width = '100%';
         buttons.style.height = '35px';
         buttons.style.border = "1.5px solid black";
+
+        var resize = document.createElement("div");
+        resize.classList.add("resizeMe");
+        resize.id = "resizeCol" + column;
+        resize.style.width = "20px";
+        resize.style.height = "33px"; 
+        resize.style.float = "right";
+        resize.style.backgroundColor = "lightgrey";
+        resize.style.cursor =  'col-resize';
+        //resize.onclick = "resize()";
+        resize.addEventListener("mousedown", resizeColumns);
+
+    
+        //resize.addEventListener("mousedown", resize());
+        
+        buttons.append(resize);
+
 
         var addCell = document.createElement('button');
         addCell.classList.add("btn");
@@ -894,11 +922,14 @@ define([
             var columns = document.getElementsByClassName("column");
             if(parseInt(colIndex) < columns.length){
                 var currCol = columns[colIndex - 1];
+                //console.log(currCol.querySelector("#click" + colIndex));
                 var nextCol = columns[colIndex];
                 $(currCol).insertAfter(nextCol);
                 var increment = parseInt(colIndex) + 1;
                 currCol.id = "column" + increment;
                 nextCol.id = "column" + colIndex;
+                currCol.querySelector("#click" + colIndex).id = "click" + increment;
+                nextCol.querySelector("#click" + increment).id = "click" + colIndex;
                 reindex();
             }
         }
@@ -908,29 +939,105 @@ define([
         moveColLeft.classList.add("btn");
         moveColLeft.classList.add("btn-default");
         moveColLeft.style.float = "right";
+        
         moveColLeft.innerHTML = '<i class = "fa fa-arrow-left"></i>';
         moveColLeft.onclick = function(){
-            var colIndex = $(this).parents()[2].id; //curr col
-            colIndex = colIndex.replace('column', '');
-            if(parseInt(colIndex) > 1){
+            var colIndex = $(this).parents()[2].id;
+            colIndex = parseInt(colIndex.replace('column', '')); //this is indexed starting at one //5
+            if(colIndex > 1){
                 var columns = document.getElementsByClassName("column");
-                var currCol = columns[colIndex - 1]; 
-                var prevCol = columns[colIndex - 2];
+                var currColIndex = colIndex - 1; //subtract 1 to access correct index in columns array //4
+                var currCol = columns[currColIndex]; 
+                var prevCol = columns[currColIndex - 1];
                 $(prevCol).insertAfter(currCol);
-                var increment = parseInt(colIndex) - 1;
-                currCol.id = "column" + increment;
+                currCol.id = "column" + currColIndex;  
                 prevCol.id = "column" + colIndex;
+                currCol.querySelector("#click" + colIndex).id = "click" + currColIndex;
+                prevCol.querySelector("#click" + currColIndex).id = "click" + colIndex;
                 reindex();
 
             }
         }
         buttons.append(moveColLeft);
 
+        var clickable = document.createElement('div');
+        clickable.classList.add("clickable-area")
+        clickable.id = "click" + column;
+        clickable.style.height = "35px";
+        clickable.addEventListener("click", selectColumn);
+        buttons.append(clickable);
+
+        
         toolbar.append(buttons);
 
+    
         return toolbar;
     }
 
+    function resizeColumns(e){
+        var ele = this;
+        var colIndex = ele.id.replace('resizeCol', '');
+    
+        var column = document.getElementById("column" + colIndex);
+
+        let x, w = 0;
+        
+        x = e.clientX;
+
+        const styles = window.getComputedStyle(column);
+        w = parseInt(styles.width, 10);
+    
+       
+
+        const mouseMoveHandler = function (e) {
+            const dx = e.clientX - x;
+            if((w + dx) >= 135){
+                column.style.width = `${w + dx}px`;
+                colWidths[colIndex - 1] =  `${w + dx}px`;
+            }
+            
+            var docWidth = document.getElementById('notebook-container').style.width;
+            docWidth = parseInt(docWidth.replace('px', ''));
+            docWidth += dx;
+            if(docWidth >= 1000){
+                var nbcontainer = document.getElementById('notebook-container');
+                nbcontainer.style.width = `${docWidth}px`;
+            }
+           
+        };
+
+        const mouseUpHandler = function () {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+        };
+
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+
+    }
+
+    function selectColumn(){
+        var ele = this;
+        var colIndex = ele.id.replace('click', '');
+
+        var previousSelection = document.querySelector(".column.selected");
+        var column = document.getElementById("column" + colIndex);
+
+        if(previousSelection != null && previousSelection != column){
+            var previousSelection = document.querySelector(".column.selected"); 
+            previousSelection.style.border = "";
+            previousSelection.classList.remove('selected');
+        }
+
+        column.classList.toggle("selected");
+        if(column.classList.contains("selected")){
+            column.style.border = "5px solid green";
+        }
+        else{
+            column.style.border = "";
+        }
+
+    }
 
     function update_styling() {
         nCols = Jupyter.notebook.metadata.columns;
@@ -948,42 +1055,69 @@ define([
        
 
         for(var c = 0; c < nCols; c++){
-            var newCol = createNewColumn((c+1), newColumnWidth);
+            var newCol = document.createElement('div');   
+            newCol.classList.add("column");
+            newCol.id = "column" + (c+1).toString();
+            newCol.style.width = "500px";
+            colWidths[c] = newColumnWidth.toString() + "%";
+            newCol.style.float = 'left';
+            newCol.style.margin = "10px";
+            newCol.style.height = "inherit";
+            newCol.style.minHeight = "30px";
+            newCol.style.backgroundColor = "rgba(255,255,255,0.5)";
+
             document.getElementById('notebook-container').appendChild(newCol);
             var colIndex = newCol.id;
             colIndex = colIndex.replace('column', '');
 
             var toolbar = createColumnToolbar(colIndex);
             newCol.prepend(toolbar);
+
         }
 
        
 
     }
 
-    function restyleColumns(numColumns){
+    function add_column(){
+
+        var numColumns = document.getElementsByClassName("column").length;
+        numColumns++;
+
         var newColumnWidth = 100/numColumns - 2;
         var newNbContainerWidth = 900*numColumns + 50;
-        document.getElementById('notebook-container').style.width = newNbContainerWidth.toString() + "px"; //resizing nb container
+        document.getElementById('notebook-container').style.width += 600 //newNbContainerWidth.toString() + "px"; //resizing nb container
         
+        var insertAfter = numColumns;
+        var selection = false;
         //restyling existing columns
         var columns = document.getElementsByClassName("column"); 
         for(var c = 0; c < columns.length; c++){
             columns[c].style.float = 'left';
             columns[c].style.margin = "10px";
-            columns[c].style.width =  newColumnWidth.toString() + "%"
+            var colId = columns[c].id;
+            colId = parseInt(colId.replace("column", ""));
+            console.log(colId);
+            if(colId >= insertAfter){
+                colId++;
+                columns[c].id = "column" + colId;
+            }
+            if(columns[c].classList.contains("selected")){
+                selection = true;
+                insertAfter = columns[c].id.replace("column", "");
+            }
         }
 
-        return newColumnWidth;
-
-    
-    }
-
-    function createNewColumn(numColumns, newColumnWidth){
+        var insertAt = numColumns;
+        if(selection){
+            insertAt = parseInt(insertAfter) + 1;
+        }
+        
+        //adding new column
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
-        newCol.id = "column" + numColumns.toString();
-        newCol.style.width = newColumnWidth.toString() + "%";
+        newCol.id = "column" + insertAt.toString();
+        newCol.style.width = "500px"; 
         newCol.style.float = 'left';
         newCol.style.margin = "10px";
         newCol.style.height = "inherit";
@@ -1008,26 +1142,78 @@ define([
         var toolbar = createColumnToolbar(colIndex);
         newCol.prepend(toolbar);
 
+        var cell_options = {
+            events: Jupyter.notebook.events, 
+            config: Jupyter.notebook.config, 
+            keyboard_manager: Jupyter.notebook.keyboard_manager, 
+            notebook: Jupyter.notebook,
+            tooltip: Jupyter.notebook.tooltip
+        };
+
 
         var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
         newCodeCell.set_input_prompt();
         newCodeCell.metadata.column = nCols + 1;
-        $(newCol).append(newCodeCell.element);
-        document.getElementById('notebook-container').appendChild(newCol);
 
+        $(newCol).append(newCodeCell.element);
+
+
+    
+        if(insertAfter == numColumns){
+            document.getElementById('notebook-container').appendChild(newCol);
+        }
+        else{
+            var insertAfterCol = document.getElementById("column" + (insertAfter));
+            insertAfterCol.after(newCol);
+            reindex();
+        }
+
+        
         nCols++;
         Jupyter.notebook.metadata.columns = nCols;
 
     }
 
+    
+
     function delete_column(){
         var columns = document.getElementsByClassName("column"); 
         var lastColumn = columns[nCols-1];
+
+
+        var selection = false;
+        var deletedCol;
+        for(var c = 0; c<columns.length; c++){
+            if(columns[c].classList.contains("selected")){
+                deletedCol = c;
+                selection = true;
+                columns[c].remove();
+                break;
+            }
+        } 
+        if(!selection){
+            lastColumn.remove();
+        }
         
-        lastColumn.remove();
+        
         nCols--;
 
-        restyleColumns(nCols);
+        //restyling existing columns
+        var columns = document.getElementsByClassName("column"); 
+        for(c = 0; c < columns.length; c++){
+            columns[c].style.float = 'left';
+            columns[c].style.margin = "10px";
+            if(c >= deletedCol){
+                console.log(c);
+                columns[c].id = "column" + (c + 1);
+                columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
+                columns[c].querySelector("#resizeCol" + (c+2)).id = "resize" + (c+1);
+                columns[c].querySelector("#click" + (c+2)).id = "click" + (c + 1);
+            }
+           
+        
+        }
+        reindex();
 
         Jupyter.notebook.metadata.columns = nCols;
 
