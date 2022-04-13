@@ -912,11 +912,14 @@ define([  //dependencies
             var columns = document.getElementsByClassName("column");
             if(parseInt(colIndex) < columns.length){
                 var currCol = columns[colIndex - 1];
+                //console.log(currCol.querySelector("#click" + colIndex));
                 var nextCol = columns[colIndex];
                 $(currCol).insertAfter(nextCol);
                 var increment = parseInt(colIndex) + 1;
                 currCol.id = "column" + increment;
                 nextCol.id = "column" + colIndex;
+                currCol.querySelector("#click" + colIndex).id = "click" + increment;
+                nextCol.querySelector("#click" + increment).id = "click" + colIndex;
                 reindex();
             }
         }
@@ -929,16 +932,18 @@ define([  //dependencies
         
         moveColLeft.innerHTML = '<i class = "fa fa-arrow-left"></i>';
         moveColLeft.onclick = function(){
-            var colIndex = $(this).parents()[2].id; //curr col
-            colIndex = colIndex.replace('column', '');
-            if(parseInt(colIndex) > 1){
+            var colIndex = $(this).parents()[2].id;
+            colIndex = parseInt(colIndex.replace('column', '')); //this is indexed starting at one //5
+            if(colIndex > 1){
                 var columns = document.getElementsByClassName("column");
-                var currCol = columns[colIndex - 1]; 
-                var prevCol = columns[colIndex - 2];
+                var currColIndex = colIndex - 1; //subtract 1 to access correct index in columns array //4
+                var currCol = columns[currColIndex]; 
+                var prevCol = columns[currColIndex - 1];
                 $(prevCol).insertAfter(currCol);
-                var increment = parseInt(colIndex) - 1;
-                currCol.id = "column" + increment;
+                currCol.id = "column" + currColIndex;  
                 prevCol.id = "column" + colIndex;
+                currCol.querySelector("#click" + colIndex).id = "click" + currColIndex;
+                prevCol.querySelector("#click" + currColIndex).id = "click" + colIndex;
                 reindex();
 
             }
@@ -1074,6 +1079,7 @@ define([  //dependencies
         document.getElementById('notebook-container').style.width += 600 //newNbContainerWidth.toString() + "px"; //resizing nb container
         
         var insertAfter = numColumns;
+        var selection = false;
         //restyling existing columns
         var columns = document.getElementsByClassName("column"); 
         for(var c = 0; c < columns.length; c++){
@@ -1087,13 +1093,16 @@ define([  //dependencies
                 columns[c].id = "column" + colId;
             }
             if(columns[c].classList.contains("selected")){
+                selection = true;
                 insertAfter = columns[c].id.replace("column", "");
             }
         }
 
-        var insertAt = parseInt(insertAfter) + 1;
-
-
+        var insertAt = numColumns;
+        if(selection){
+            insertAt = parseInt(insertAfter) + 1;
+        }
+        
         //adding new column
         var newCol = document.createElement('div');   
         newCol.classList.add("column");
@@ -1149,26 +1158,41 @@ define([  //dependencies
     function delete_column(){
         var columns = document.getElementsByClassName("column"); 
         var lastColumn = columns[nCols-1];
+
+
+        var selection = false;
+        var deletedCol;
+        for(var c = 0; c<columns.length; c++){
+            if(columns[c].classList.contains("selected")){
+                deletedCol = c;
+                selection = true;
+                columns[c].remove();
+                break;
+            }
+        } 
+        if(!selection){
+            lastColumn.remove();
+        }
         
-        lastColumn.remove();
+        
         nCols--;
-
-        //delete colWidths[nCols];
-        //colWidths.length--;
-    
-
-        var newColumnWidth = 100/nCols - 2;
-        var newNbContainerWidth = 700*nCols + 50;
-        //document.getElementById('notebook-container').style.width -= 500;//newNbContainerWidth.toString() + "px"; //resizing nb container
 
         //restyling existing columns
         var columns = document.getElementsByClassName("column"); 
-        for(var c = 0; c < columns.length; c++){
+        for(c = 0; c < columns.length; c++){
             columns[c].style.float = 'left';
             columns[c].style.margin = "10px";
-
-            //columns[c].style.width =  newColumnWidth.toString() + "%"
+            if(c >= deletedCol){
+                console.log(c);
+                columns[c].id = "column" + (c + 1);
+                columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
+                columns[c].querySelector("#resizeCol" + (c+2)).id = "resize" + (c+1);
+                columns[c].querySelector("#click" + (c+2)).id = "click" + (c + 1);
+            }
+           
+        
         }
+        reindex();
 
         Jupyter.notebook.metadata.columns = nCols;
 
