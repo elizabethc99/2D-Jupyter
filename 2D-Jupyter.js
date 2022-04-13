@@ -160,12 +160,11 @@ define([  //dependencies
                     ){ 
                     //attach to column if column is empty
                     if((countCellsinColumns()[c]) == 0){ 
-                        // inColumn = true;
+                        
                         //make cells into a single div object w/ nb container
                         var cell = that.element.detach();
                         $(col).append(cell);
                         that.metadata.column = c + 1;
-                        //drag cells in order?
                         delete that.metadata.spatial;
                         that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
                         reindex();
@@ -912,7 +911,6 @@ define([  //dependencies
             var columns = document.getElementsByClassName("column");
             if(parseInt(colIndex) < columns.length){
                 var currCol = columns[colIndex - 1];
-                //console.log(currCol.querySelector("#click" + colIndex));
                 var nextCol = columns[colIndex];
                 $(currCol).insertAfter(nextCol);
                 var increment = parseInt(colIndex) + 1;
@@ -967,8 +965,9 @@ define([  //dependencies
     function resizeColumns(e){
         var ele = this;
         var colIndex = ele.id.replace('resizeCol', '');
-    
         var column = document.getElementById("column" + colIndex);
+
+        var numColumns = document.getElementsByClassName("column").length;
 
         let x, w = 0;
         
@@ -989,7 +988,7 @@ define([  //dependencies
             var docWidth = document.getElementById('notebook-container').style.width;
             docWidth = parseInt(docWidth.replace('px', ''));
             docWidth += dx;
-            if(docWidth >= 1000){
+            if(docWidth >= numColumns * 600){
                 var nbcontainer = document.getElementById('notebook-container');
                 nbcontainer.style.width = `${docWidth}px`;
             }
@@ -1074,9 +1073,7 @@ define([  //dependencies
         var numColumns = document.getElementsByClassName("column").length;
         numColumns++;
 
-        var newColumnWidth = 100/numColumns - 2;
-        var newNbContainerWidth = 900*numColumns + 50;
-        document.getElementById('notebook-container').style.width += 600 //newNbContainerWidth.toString() + "px"; //resizing nb container
+        document.getElementById('notebook-container').style.width = `${numColumns * 500}px`
         
         var insertAfter = numColumns;
         var selection = false;
@@ -1087,7 +1084,6 @@ define([  //dependencies
             columns[c].style.margin = "10px";
             var colId = columns[c].id;
             colId = parseInt(colId.replace("column", ""));
-            console.log(colId);
             if(colId >= insertAfter){
                 colId++;
                 columns[c].id = "column" + colId;
@@ -1117,7 +1113,6 @@ define([  //dependencies
         var colIndex = newCol.id;
         colIndex = colIndex.replace('column', '');
         var toolbar = createColumnToolbar(colIndex);
-        //var toolbar = createColumnToolbar(columnNumber);
         newCol.prepend(toolbar);
 
         var cell_options = {
@@ -1128,16 +1123,14 @@ define([  //dependencies
             tooltip: Jupyter.notebook.tooltip
         };
 
-
+        //initialize new column with a code cell
         var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
-       
         newCodeCell.set_input_prompt();
         newCodeCell.metadata.column = nCols + 1;
-
         $(newCol).append(newCodeCell.element);
 
 
-    
+        //determine where to insert new column
         if(insertAfter == numColumns){
             document.getElementById('notebook-container').appendChild(newCol);
         }
@@ -1159,7 +1152,7 @@ define([  //dependencies
         var columns = document.getElementsByClassName("column"); 
         var lastColumn = columns[nCols-1];
 
-
+        //remove column
         var selection = false;
         var deletedCol;
         for(var c = 0; c<columns.length; c++){
@@ -1176,14 +1169,13 @@ define([  //dependencies
         
         
         nCols--;
-
-        //restyling existing columns
+        document.getElementById('notebook-container').style.width = `${nCols * 600}px`
+        //restyle existing columns
         var columns = document.getElementsByClassName("column"); 
         for(c = 0; c < columns.length; c++){
             columns[c].style.float = 'left';
             columns[c].style.margin = "10px";
             if(c >= deletedCol){
-                console.log(c);
                 columns[c].id = "column" + (c + 1);
                 columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
                 columns[c].querySelector("#resizeCol" + (c+2)).id = "resize" + (c+1);
