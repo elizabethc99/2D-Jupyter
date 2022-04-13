@@ -999,8 +999,7 @@ define([
             docWidth = parseInt(docWidth.replace('px', ''));
             docWidth += dx;
             if(docWidth >= numColumns * 600){
-                var nbcontainer = document.getElementById('notebook-container');
-                nbcontainer.style.width = `${docWidth}px`;
+                document.getElementById('notebook-container').style.width = `${docWidth}px`;
             }
            
         };
@@ -1083,7 +1082,7 @@ define([
         var numColumns = document.getElementsByClassName("column").length;
         numColumns++;
 
-        document.getElementById('notebook-container').style.width = `${numColumns * 500}px`
+        document.getElementById('notebook-container').style.width = `${numColumns * 600}px`
         
         var insertAfter = numColumns;
         var selection = false;
@@ -1127,11 +1126,42 @@ define([
         var numColumns = document.getElementsByClassName("column").length;
         numColumns++;
 
-        //restyle existing columns
-        var newColumnWidth = restyleColumns(numColumns);
+        document.getElementById('notebook-container').style.width = `${numColumns * 600}px`
+        
+        var insertAfter = numColumns;
+        var selection = false;
+        //restyling existing columns
+        var columns = document.getElementsByClassName("column"); 
+        for(var c = 0; c < columns.length; c++){
+            columns[c].style.float = 'left';
+            columns[c].style.margin = "10px";
+            var colId = columns[c].id;
+            colId = parseInt(colId.replace("column", ""));
+            if(colId >= insertAfter){
+                colId++;
+                columns[c].id = "column" + colId;
+            }
+            if(columns[c].classList.contains("selected")){
+                selection = true;
+                insertAfter = columns[c].id.replace("column", "");
+            }
+        }
 
-        //create new column
-        var newCol = createNewColumn(numColumns, newColumnWidth)
+        var insertAt = numColumns;
+        if(selection){
+            insertAt = parseInt(insertAfter) + 1;
+        }
+        
+        //adding new column
+        var newCol = document.createElement('div');   
+        newCol.classList.add("column");
+        newCol.id = "column" + insertAt.toString();
+        newCol.style.width = "500px"; 
+        newCol.style.float = 'left';
+        newCol.style.margin = "10px";
+        newCol.style.height = "inherit";
+        newCol.style.minHeight = "30px";
+        newCol.style.backgroundColor = "rgba(255,255,255,1)";
 
         var colIndex = newCol.id;
         colIndex = colIndex.replace('column', '');
