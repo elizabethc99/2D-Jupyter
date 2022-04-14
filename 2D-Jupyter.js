@@ -1021,7 +1021,7 @@ define([  //dependencies
 
         column.classList.toggle("selected");
         if(column.classList.contains("selected")){
-            column.style.border = "5px solid green";
+            column.style.border = "5px solid #42a5f5";
         }
         else{
             column.style.border = "";
