@@ -920,6 +920,10 @@ define([  //dependencies
                 nextCol.id = "column" + colIndex;
                 currCol.querySelector("#click" + colIndex).id = "click" + increment;
                 nextCol.querySelector("#click" + increment).id = "click" + colIndex;
+                currCol.querySelector("#columnToolbar" + colIndex).id = "columnToolbar" + increment;
+                nextCol.querySelector("#columnToolbar" + increment).id = "columnToolbar" + colIndex;
+                currCol.querySelector("#resizeCol" + colIndex).id = "resizeCol" + increment;
+                nextCol.querySelector("#resizeCol" + increment).id = "resizeCol" + colIndex;
                 reindex();
             }
         }
@@ -944,6 +948,10 @@ define([  //dependencies
                 prevCol.id = "column" + colIndex;
                 currCol.querySelector("#click" + colIndex).id = "click" + currColIndex;
                 prevCol.querySelector("#click" + currColIndex).id = "click" + colIndex;
+                currCol.querySelector("#columnToolbar" + colIndex).id = "columnToolbar" + currColIndex;
+                prevCol.querySelector("#columnToolbar" + currColIndex).id = "columnToolbar" + colIndex;
+                currCol.querySelector("#resizeCol" + colIndex).id = "resizeCol" + currColIndex;
+                prevCol.querySelector("#resizeCol" + currColIndex).id = "resizeCol" + colIndex;
                 reindex();
 
             }
@@ -1095,6 +1103,7 @@ define([  //dependencies
             if(columns[c].classList.contains("selected")){
                 selection = true;
                 insertAfter = columns[c].id.replace("column", "");
+                
             }
         }
 
@@ -1186,7 +1195,7 @@ define([  //dependencies
                 console.log(c);
                 columns[c].id = "column" + (c + 1);
                 columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
-                columns[c].querySelector("#resizeCol" + (c+2)).id = "resize" + (c+1);
+                columns[c].querySelector("#resizeCol" + (c+2)).id = "resizeCol" + (c+1);
                 columns[c].querySelector("#click" + (c+2)).id = "click" + (c + 1);
             }
            
