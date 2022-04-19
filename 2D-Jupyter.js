@@ -918,6 +918,7 @@ define([  //dependencies
                 var increment = parseInt(colIndex) + 1;
                 currCol.id = "column" + increment;
                 nextCol.id = "column" + colIndex;
+
                 currCol.querySelector("#click" + colIndex).id = "click" + increment;
                 nextCol.querySelector("#click" + increment).id = "click" + colIndex;
                 currCol.querySelector("#columnToolbar" + colIndex).id = "columnToolbar" + increment;
@@ -925,6 +926,18 @@ define([  //dependencies
                 currCol.querySelector("#resizeCol" + colIndex).id = "resizeCol" + increment;
                 nextCol.querySelector("#resizeCol" + increment).id = "resizeCol" + colIndex;
                 reindex();
+
+
+                var cells = Jupyter.notebook.get_cells();
+                var children = Array.from(currCol.children);
+                children.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = increment;
+                    }
+                    
+                })
+        
             }
         }
         buttons.append(moveColRight);
@@ -953,6 +966,16 @@ define([  //dependencies
                 currCol.querySelector("#resizeCol" + colIndex).id = "resizeCol" + currColIndex;
                 prevCol.querySelector("#resizeCol" + currColIndex).id = "resizeCol" + colIndex;
                 reindex();
+
+                var cells = Jupyter.notebook.get_cells();
+                var children = Array.from(currCol.children);
+                children.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = currColIndex;
+                    }
+                    
+                })
 
             }
         }
