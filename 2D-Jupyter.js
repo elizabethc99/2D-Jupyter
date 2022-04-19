@@ -929,11 +929,19 @@ define([  //dependencies
 
 
                 var cells = Jupyter.notebook.get_cells();
-                var children = Array.from(currCol.children);
-                children.forEach(c => {
+                var currChildren = Array.from(currCol.children);
+                var nextChildren = Array.from(nextCol.children);
+                currChildren.forEach(c => {
                     if(c.classList.contains("cell")){
                         var cellIndex = c.querySelector(".repos").innerHTML;
                         cells[cellIndex - 1].metadata.column = increment;
+                    }
+                    
+                })
+                nextChildren.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = colIndex;
                     }
                     
                 })
@@ -968,11 +976,19 @@ define([  //dependencies
                 reindex();
 
                 var cells = Jupyter.notebook.get_cells();
-                var children = Array.from(currCol.children);
-                children.forEach(c => {
+                var currChildren = Array.from(currCol.children);
+                var prevChildren = Array.from(prevCol.children);
+                currChildren.forEach(c => {
                     if(c.classList.contains("cell")){
                         var cellIndex = c.querySelector(".repos").innerHTML;
                         cells[cellIndex - 1].metadata.column = currColIndex;
+                    }
+                    
+                })
+                prevChildren.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = colIndex;
                     }
                     
                 })
@@ -1104,9 +1120,6 @@ define([  //dependencies
 
         var numColumns = document.getElementsByClassName("column").length;
         numColumns++;
-
-        var newColumnWidth = 100/numColumns - 2;
-        var newNbContainerWidth = 900*numColumns + 50;
         document.getElementById("notebook-container").style.width = numColumns*600 + "px";//newNbContainerWidth.toString() + "px"; //resizing nb container
         
         var insertAfter = numColumns;
@@ -1220,6 +1233,16 @@ define([  //dependencies
                 columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
                 columns[c].querySelector("#resizeCol" + (c+2)).id = "resizeCol" + (c+1);
                 columns[c].querySelector("#click" + (c+2)).id = "click" + (c + 1);
+
+                var cells = Jupyter.notebook.get_cells();
+                var children = Array.from(columns[c].children);
+                children.forEach(child => {
+                    if(child.classList.contains("cell")){
+                        var cellIndex = child.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = parseInt(c+1);
+                    }
+                    
+                })
             }
            
         
