@@ -1107,7 +1107,7 @@ define([  //dependencies
 
         var newColumnWidth = 100/numColumns - 2;
         var newNbContainerWidth = 900*numColumns + 50;
-        document.getElementById('notebook-container').style.width += 600 //newNbContainerWidth.toString() + "px"; //resizing nb container
+        document.getElementById("notebook-container").style.width = numColumns*600 + "px";//newNbContainerWidth.toString() + "px"; //resizing nb container
         
         var insertAfter = numColumns;
         var selection = false;
