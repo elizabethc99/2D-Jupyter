@@ -281,7 +281,7 @@ define([  //dependencies
             notebook: this.notebook});
         inner_cell.append(this.celltoolbar.element);
         var input_area = $('<div/>').addClass('input_area').attr("aria-label", i18n.msg._("Edit code here"));
-        input_area.attr("style", "margin:5px");
+        input_area.attr("style", "margin:1px");
         
         this.code_mirror = new CodeMirror(input_area.get(0), this._options.cm_config);
         // In case of bugs that put the keyboard manager into an inconsistent state,
@@ -295,6 +295,11 @@ define([  //dependencies
         });
         this.code_mirror.on('keydown', $.proxy(this.handle_keyevent,this));
         $(this.code_mirror.getInputField()).attr("spellcheck", "false");
+
+        prompt_container.attr("style", "width:15%;");
+        prompt.attr("style", "text-align:left; margin-left:5px;")
+
+        // comment out below line to remove input prompt
         inner_cell.append(input_area);
         prompt_container.append(prompt).append(run_this_cell);
         input.append(prompt_container).append(inner_cell);
@@ -1228,12 +1233,6 @@ define([  //dependencies
         this.command_mode();
         this.set_dirty(true);
     };
-
-    // Notebook.prototype.get_cell_elements = function () {
-    //     var container = this.container || $('#notebook-container');
-    //     console.log(container.find(".cell").not('.cell .cell'));
-    //     return container.find(".cell").not('.cell .cell');
-    // };
 
 
 
