@@ -293,7 +293,7 @@ define([
             notebook: this.notebook});
         inner_cell.append(this.celltoolbar.element);
         var input_area = $('<div/>').addClass('input_area').attr("aria-label", i18n.msg._("Edit code here"));
-        input_area.attr("style", "margin:5px");
+        input_area.attr("style", "margin:1px");
         
         this.code_mirror = new CodeMirror(input_area.get(0), this._options.cm_config);
         // In case of bugs that put the keyboard manager into an inconsistent state,
@@ -307,9 +307,14 @@ define([
         });
         this.code_mirror.on('keydown', $.proxy(this.handle_keyevent,this));
         $(this.code_mirror.getInputField()).attr("spellcheck", "false");
+
+        prompt_container.attr("style", "width:15%;");
+        prompt.attr("style", "text-align:left; margin-left:5px;")
+
+        // comment out below line to remove input prompt
         inner_cell.append(input_area);
         prompt_container.append(prompt).append(run_this_cell);
-        //input.append(prompt_container).append(inner_cell);
+        input.append(prompt_container).append(inner_cell);
         input.append(inner_cell);
 
         var output = $('<div></div>');
@@ -926,9 +931,34 @@ define([
                 var increment = parseInt(colIndex) + 1;
                 currCol.id = "column" + increment;
                 nextCol.id = "column" + colIndex;
+
                 currCol.querySelector("#click" + colIndex).id = "click" + increment;
                 nextCol.querySelector("#click" + increment).id = "click" + colIndex;
+                currCol.querySelector("#columnToolbar" + colIndex).id = "columnToolbar" + increment;
+                nextCol.querySelector("#columnToolbar" + increment).id = "columnToolbar" + colIndex;
+                currCol.querySelector("#resizeCol" + colIndex).id = "resizeCol" + increment;
+                nextCol.querySelector("#resizeCol" + increment).id = "resizeCol" + colIndex;
                 reindex();
+
+
+                var cells = Jupyter.notebook.get_cells();
+                var currChildren = Array.from(currCol.children);
+                var nextChildren = Array.from(nextCol.children);
+                currChildren.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = increment;
+                    }
+                    
+                })
+                nextChildren.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = colIndex;
+                    }
+                    
+                })
+        
             }
         }
         buttons.append(moveColRight);
@@ -952,7 +982,29 @@ define([
                 prevCol.id = "column" + colIndex;
                 currCol.querySelector("#click" + colIndex).id = "click" + currColIndex;
                 prevCol.querySelector("#click" + currColIndex).id = "click" + colIndex;
+                currCol.querySelector("#columnToolbar" + colIndex).id = "columnToolbar" + currColIndex;
+                prevCol.querySelector("#columnToolbar" + currColIndex).id = "columnToolbar" + colIndex;
+                currCol.querySelector("#resizeCol" + colIndex).id = "resizeCol" + currColIndex;
+                prevCol.querySelector("#resizeCol" + currColIndex).id = "resizeCol" + colIndex;
                 reindex();
+
+                var cells = Jupyter.notebook.get_cells();
+                var currChildren = Array.from(currCol.children);
+                var prevChildren = Array.from(prevCol.children);
+                currChildren.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = currColIndex;
+                    }
+                    
+                })
+                prevChildren.forEach(c => {
+                    if(c.classList.contains("cell")){
+                        var cellIndex = c.querySelector(".repos").innerHTML;
+                        cells[cellIndex - 1].metadata.column = colIndex;
+                    }
+                    
+                })
 
             }
         }
@@ -1029,7 +1081,7 @@ define([
 
         column.classList.toggle("selected");
         if(column.classList.contains("selected")){
-            column.style.border = "5px solid green";
+            column.style.border = "5px solid #42a5f5";
         }
         else{
             column.style.border = "";
@@ -1081,8 +1133,7 @@ define([
 
         var numColumns = document.getElementsByClassName("column").length;
         numColumns++;
-
-        document.getElementById('notebook-container').style.width = `${numColumns * 600}px`
+        document.getElementById("notebook-container").style.width = numColumns*600 + "px";//newNbContainerWidth.toString() + "px"; //resizing nb container
         
         var insertAfter = numColumns;
         var selection = false;
@@ -1100,50 +1151,7 @@ define([
             if(columns[c].classList.contains("selected")){
                 selection = true;
                 insertAfter = columns[c].id.replace("column", "");
-            }
-        }
-
-        var insertAt = numColumns;
-        if(selection){
-            insertAt = parseInt(insertAfter) + 1;
-        }
-        
-        //adding new column
-        var newCol = document.createElement('div');   
-        newCol.classList.add("column");
-        newCol.id = "column" + insertAt.toString();
-        newCol.style.width = "500px"; 
-        newCol.style.float = 'left';
-        newCol.style.margin = "10px";
-        newCol.style.height = "inherit";
-        newCol.style.minHeight = "30px";
-        newCol.style.backgroundColor = "rgba(255,255,255,1)";
-        
-        return newCol;
-    }
-
-    function add_column(){
-        var numColumns = document.getElementsByClassName("column").length;
-        numColumns++;
-
-        document.getElementById('notebook-container').style.width = `${numColumns * 600}px`
-        
-        var insertAfter = numColumns;
-        var selection = false;
-        //restyling existing columns
-        var columns = document.getElementsByClassName("column"); 
-        for(var c = 0; c < columns.length; c++){
-            columns[c].style.float = 'left';
-            columns[c].style.margin = "10px";
-            var colId = columns[c].id;
-            colId = parseInt(colId.replace("column", ""));
-            if(colId >= insertAfter){
-                colId++;
-                columns[c].id = "column" + colId;
-            }
-            if(columns[c].classList.contains("selected")){
-                selection = true;
-                insertAfter = columns[c].id.replace("column", "");
+                
             }
         }
 
@@ -1199,47 +1207,94 @@ define([
 
     }
 
-    
+    Notebook.prototype.execute_cell_range = function (start, end) {
+        this.command_mode();
+        var indices = [];
+        for (var i=start; i<end; i++) {
+            indices.push(i);
+        } 
+        console.log("indices from execute cell range: " + indices)
+        this.execute_cells(indices);
+       
+    };
+
+    Notebook.prototype.execute_cells = function (indices) {
+        console.log("entered execute_cells");
+        console.log(indices);
+        if (indices.length === 0) {
+            return;
+        }
+
+        var cell;
+        for (var i = 0; i < indices.length; i++) {
+            cell = this.get_cell(indices[i]);
+            console.log("hello");
+            console.log(cell);
+            cell.execute();
+        }
+
+        this.select(indices[indices.length - 1]);
+        this.command_mode();
+        this.set_dirty(true);
+    };
+
+
+
 
     function delete_column(){
-        var columns = document.getElementsByClassName("column"); 
-        var lastColumn = columns[nCols-1];
+        if(confirm("Are you sure you want to delete this column? This action cannot be undone.")){
+            console.log("delete the column");
 
-        //remove column
-        var selection = false;
-        var deletedCol;
-        for(var c = 0; c<columns.length; c++){
-            if(columns[c].classList.contains("selected")){
-                deletedCol = c;
-                selection = true;
-                columns[c].remove();
-                break;
-            }
-        } 
-        if(!selection){
-            lastColumn.remove();
-        }
-        
-        
-        nCols--;
-        document.getElementById('notebook-container').style.width = `${nCols * 600}px`
-        //restyle existing columns
-        var columns = document.getElementsByClassName("column"); 
-        for(c = 0; c < columns.length; c++){
-            columns[c].style.float = 'left';
-            columns[c].style.margin = "10px";
-            if(c >= deletedCol){
-                columns[c].id = "column" + (c + 1);
-                columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
-                columns[c].querySelector("#resizeCol" + (c+2)).id = "resize" + (c+1);
-                columns[c].querySelector("#click" + (c+2)).id = "click" + (c + 1);
-            }
-           
-        
-        }
-        reindex();
+            var columns = document.getElementsByClassName("column"); 
+            var lastColumn = columns[nCols-1];
 
-        Jupyter.notebook.metadata.columns = nCols;
+
+            var selection = false;
+            var deletedCol;
+            for(var c = 0; c<columns.length; c++){
+                if(columns[c].classList.contains("selected")){
+                    deletedCol = c;
+                    selection = true;
+                    columns[c].remove();
+                    break;
+                }
+            } 
+            if(!selection){
+                lastColumn.remove();
+            }
+            
+            
+            nCols--;
+
+            //restyling existing columns
+            var columns = document.getElementsByClassName("column"); 
+            for(c = 0; c < columns.length; c++){
+                columns[c].style.float = 'left';
+                columns[c].style.margin = "10px";
+                if(c >= deletedCol){
+                    console.log(c);
+                    columns[c].id = "column" + (c + 1);
+                    columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
+                    columns[c].querySelector("#resizeCol" + (c+2)).id = "resizeCol" + (c+1);
+                    columns[c].querySelector("#click" + (c+2)).id = "click" + (c + 1);
+
+                    var cells = Jupyter.notebook.get_cells();
+                    var children = Array.from(columns[c].children);
+                    children.forEach(child => {
+                        if(child.classList.contains("cell")){
+                            var cellIndex = child.querySelector(".repos").innerHTML;
+                            cells[cellIndex - 1].metadata.column = parseInt(c+1);
+                        }
+                        
+                    })
+                }
+            
+            
+            }
+            reindex();
+
+            Jupyter.notebook.metadata.columns = nCols;
+        }
 
 
     }
