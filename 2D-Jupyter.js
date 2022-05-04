@@ -265,6 +265,28 @@ define([
         }
     };
 
+    Notebook.prototype.copy_cell = function () {
+        var cells = this.get_selected_cells();
+        if (cells.length === 0) {
+            cells = [this.get_selected_cell()];
+        }
+        
+        this.clipboard = [];
+        var cell_json;
+        for (var i=0; i < cells.length; i++) {
+            cell_json = cells[i].toJSON();
+            if (cell_json.metadata.deletable !== undefined) {
+                delete cell_json.metadata.deletable;
+            }
+            if (cell_json.id !== undefined) {
+                delete cell_json.id;
+            }
+            this.clipboard.push(cell_json);
+        }
+        reindex();
+        this.enable_paste();
+    };
+
     CodeCell.prototype.create_element = function () {
         Cell.prototype.create_element.apply(this, arguments);
         var that = this;
