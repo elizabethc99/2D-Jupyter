@@ -20,11 +20,14 @@ or go to the nbextension tab in the Jupyter file tree and enable it via the chec
 
 Usage
 -----
-Use the grey box on the left side of each cell to drag it around the page. Dragging a cell over an empty column will attach it to that column. Dragging it over another cell inside a column will place it after that cell. The numbers in the grey box indicate the run order of the cells when "run all cells" is used. Dragging a cell outside of the column area will take it out of the run order and it will not be run automatically. 
+Use the grey box on the left side of each cell to drag it around the page. Dragging a cell over the toolbar of an empty column will attach it to that column. Dragging it over another cell inside a column will place it after that cell. Dragging a cell to the edge of the page will scroll the page. 
 
-Use the plus and minus buttons on the notebook toolbar to add and delete columns. Deleting a column will delete all of the cells in that column. 
+The numbers in the grey box indicate the run order of the cells when "run all cells" is used. Dragging a cell outside of the column area will take it out of the run order and it will not be automatically run. 
 
-Use the plus button on the column header toolbars to add cell to the end of that column. The right and left arrows will shift the column right and left respectively. 
+Use the plus and minus buttons on the notebook toolbar to add and delete columns. Deleting a column will delete all of the cells in that column.
 
-The extension currently is experiencing bugs on the first notebook opened when starting a Jupyter session - reload the page to fix. 
+Click on a column toolbar to select/unselect that column. If a column is selected, adding a new column will place it directly to the right. If the delete column button is clicked, the selected column will be deleted. If no column is selected, a new column is added to the right end of the notebook, or the rightmost colum will be deleted. 
+
+Use the plus button on the column header toolbars to add cell to the bottom of that column. The right and left arrows will shift the column right and left respectively. 
+
 
