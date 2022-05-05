@@ -1167,8 +1167,12 @@ define([
             var colId = columns[c].id;
             colId = parseInt(colId.replace("column", ""));
             if(colId >= insertAfter){
+                var oldIndex = colId;
                 colId++;
                 columns[c].id = "column" + colId;
+                columns[c].querySelector("#click" +oldIndex).id = "click" + colId;
+                columns[c].querySelector("#columnToolbar" + oldIndex).id = "columnToolbar" + colId;
+                columns[c].querySelector("#resizeCol" + oldIndex).id = "resizeCol" + colId;
             }
             if(columns[c].classList.contains("selected")){
                 selection = true;
