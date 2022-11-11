@@ -13,9 +13,18 @@ https://docs.anaconda.com/anaconda/user-guide/tasks/use-jupyter-notebook-extensi
 
 Download the extension files and place them in a folder called ```2D-Jupyter``` inside jupyter/nbextensions. 
 
-Enable the extension with the command 
+For Anaconda installations, the extensions may be at one of the following paths: <br>
+```\Anaconda3\share\jupyter\nbextensions``` <br>
+```\Anaconda3\Lib\site-packages\jupyter_contrib_nbextensions\nbextensions```
+
+The correct path will contain folders for all of the provided extensions <br>
+(https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/nbextensions.html). 
+
+
+
+Enable the extension with the command
 ```jupyter nbextension enable 2D-Jupyter/2D-Jupyter```
-or go to the nbextension tab in the Jupyter file tree and enable it via the checkbox. 
+or go to the nbextension tab in the Jupyter file tree UI and enable it via the checkbox. 
 
 Usage
 -----
@@ -28,5 +37,7 @@ Use the plus and minus buttons on the notebook toolbar to add and delete columns
 Click on a column toolbar to select/unselect that column. If a column is selected, adding a new column will place it directly to the right. If the delete column button is clicked, the selected column will be deleted. If no column is selected, a new column is added to the right end of the notebook, or the rightmost colum will be deleted. 
 
 Use the plus button on the column header toolbars to add cell to the bottom of that column. The right and left arrows will shift the column right and left respectively. 
+
+<b> Be sure to manually save your notebook as you work, as the autosave function does not always work correctly. <b>
 
 
