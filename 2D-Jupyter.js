@@ -350,10 +350,11 @@ define([
         //prompt.css('backgroundColor', "#fff0f0").css('cursor', 'move');  // red drag target
         if(!CodeCell.zIndexCount)  CodeCell.zIndexCount = 1000;		// initialize zIndex if needed
 
-        repos.dblclick( function(event) {   // double-click = put back into notebook
-                that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
-                delete that.metadata.spatial;
-        });
+        // repos.dblclick( function(event) {   // double-click = put back into notebook
+        //         that.element.css("position", '').css("zIndex", '').width('').height('').css("left",'').css("top",'');
+        //         delete that.metadata.spatial;
+        // });
+
 
     
         repos.mousedown( function(event) {	// drag the cell
@@ -850,7 +851,32 @@ define([
                 $(box)[0].innerHTML = "";
                 $(box).append(cell.metadata.index);
             }
+
+            if(cell.metadata.spatial){
+                var box = document.getElementsByClassName("repos")[i]; 
+                $(box)[0].innerHTML = "";
+
+            }
+
+            
 		 }
+    }
+
+    function setColumnNumber(){
+        var columns = document.getElementsByClassName("column"); 
+        var colNumber = 1;
+        var cellIndex = 0;
+        for(var c = 0; c<columns.length; c++){
+            var numCellsInColumn = columns[c].querySelectorAll(".cell").length;
+            for (var i = 0; i<numCellsInColumn; i++){
+                Jupyter.notebook.get_cell(cellIndex).metadata.column = parseInt(colNumber);
+                cellIndex++;
+            }
+            colNumber++;
+            
+        }
+
+
     }
 
     function countCellsinColumns(){
@@ -914,6 +940,7 @@ define([
                 Jupyter.notebook.insert_cell_at_index('code', 0);
             }
             else{ 
+                console.log(column);
                 var columns = document.getElementsByClassName("column");
                 var colIndex = $(this).parents()[2].id;
                 colIndex = colIndex.replace('column', '');
@@ -928,9 +955,18 @@ define([
                     
                 }
                 else{
-                    var lastCell = cellsInCol[cellsInCol.length - 1];
-                    var lastIndex = lastCell.getElementsByClassName("repos")[0].innerHTML;
-                    Jupyter.notebook.insert_cell_at_index('code', lastIndex);
+                    // var lastCell = cellsInCol[cellsInCol.length - 1];
+                    // var lastIndex = lastCell.getElementsByClassName("repos")[0].innerHTML;
+                    // Jupyter.notebook.insert_cell_at_index('code', lastIndex);
+
+                    var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
+                    newCodeCell.set_input_prompt();
+                    newCodeCell.metadata.column = column;
+                    currCol = columns[colIndex - 1];
+                    $(currCol).append(newCodeCell.element);
+                    reindex();
+                    setColumnNumber();
+
                 }
             }
             
@@ -1225,6 +1261,7 @@ define([
             var insertAfterCol = document.getElementById("column" + (insertAfter));
             insertAfterCol.after(newCol);
             reindex();
+            setColumnNumber();
         }
 
         
@@ -1269,18 +1306,17 @@ define([
 
     function delete_column(){
         if(confirm("Are you sure you want to delete this column? This action cannot be undone.")){
-            console.log("delete the column");
-
+        
             var columns = document.getElementsByClassName("column"); 
             var lastColumn = columns[nCols-1];
 
 
             var selection = false;
-            var deletedCol;
+            var deletedCol = nCols;
             for(var c = 0; c<columns.length; c++){
                 if(columns[c].classList.contains("selected")){
-                    deletedCol = c;
                     selection = true;
+                    deletedCol = c + 1;
                     columns[c].remove();
                     break;
                 }
@@ -1288,36 +1324,29 @@ define([
             if(!selection){
                 lastColumn.remove();
             }
+
+            console.log("deleted col " + deletedCol)
             
             
             nCols--;
 
             //restyling existing columns
             var columns = document.getElementsByClassName("column"); 
+            console.log(columns.length);
             for(c = 0; c < columns.length; c++){
+                var columnId = columns[c].id;
+                columnId = parseInt(columnId.replace('column', ''));
                 columns[c].style.float = 'left';
                 columns[c].style.margin = "10px";
-                if(c >= deletedCol){
-                    console.log(c);
-                    columns[c].id = "column" + (c + 1);
-                    columns[c].querySelector("#columnToolbar" + (c+2)).id = "columnToolbar" + (c+1);
-                    columns[c].querySelector("#resizeCol" + (c+2)).id = "resizeCol" + (c+1);
-                    columns[c].querySelector("#click" + (c+2)).id = "click" + (c + 1);
-
-                    var cells = Jupyter.notebook.get_cells();
-                    var children = Array.from(columns[c].children);
-                    children.forEach(child => {
-                        if(child.classList.contains("cell")){
-                            var cellIndex = child.querySelector(".repos").innerHTML;
-                            cells[cellIndex - 1].metadata.column = parseInt(c+1);
-                        }
-                        
-                    })
+                if(columnId > deletedCol){
+                    columns[c].id = "column" + (columnId - 1);
+                    columns[c].querySelector(".col-toolbar").id = "columnToolbar" + (columnId - 1);
+                    columns[c].querySelector(".resizeMe").id = "resizeCol" + (columnId - 1);
+                    columns[c].querySelector(".clickable-area").id = "click" + (columnId - 1);
                 }
-            
-            
             }
             reindex();
+            setColumnNumber();
 
             Jupyter.notebook.metadata.columns = nCols;
         }
@@ -1333,10 +1362,16 @@ define([
 		for (var i=0; i<ncells; i++){
             var cell = cells[i];
             var index = Jupyter.notebook.find_cell_index(cell);
-            cell.metadata.index = index;
+            if(cell.metadata.spatial){
+                continue;
+            }
+            else{
+                cell.metadata.index = index;
+            }
+            
            
             var box = document.getElementsByClassName("repos")[i]; 
-            if(typeof box !== 'undefined'){
+            if(typeof box !== 'undefined' && cell.metadata.index){
                 $(box)[0].innerHTML = "";
                 $(box).append(index + 1);
             }
@@ -1348,7 +1383,10 @@ define([
             Jupyter.notebook.metadata.columns = 1;
         }
         nCols = Jupyter.notebook.metadata.columns;
+        console.log("initialize");
         update_styling();
+        setColumnNumber();
+        reindex();
 
 	}
 
