@@ -346,6 +346,7 @@ define([
         var ncells = Jupyter.notebook.ncells();
         var initialIndex = ncells + 1;
         var repos = $('<div>' + initialIndex + '</div>').addClass("repos").width('2%').css('backgroundColor', "lightgrey").css('cursor', 'move');  // the widget for dragging a cell
+        var resize = $('<div></div>').addClass("resize").width('2%').css('backgroundColor', "lightgrey").css('cursor', 'col-resize');  // the widget for dragging a cell
         // document.getElementById('notebook-container').style.width = '800px';  // set notebook and default cell width
         // document.getElementById('notebook-container').style.marginLeft = '20px';  // left justify notebook in browser
         cell.css('backgroundColor', 'rgba(255, 255, 255, 0.8)');  	// transparency
@@ -507,13 +508,56 @@ define([
             });
 
         });
+
+        resize.mousedown(function(e){
+            var ele = that;
+            console.log(ele.metadata);
+            var colIndex = ele.metadata.column;
+            var column = document.getElementById("column" + colIndex);
+
+            var numColumns = document.getElementsByClassName("column").length;
+
+            let x, w = 0;
+
+            x = e.clientX;
+
+            const styles = window.getComputedStyle(column);
+            w = parseInt(styles.width, 10);
+
+
+
+            const mouseMoveHandler = function (e) {
+                const dx = e.clientX - x;
+                if ((w + dx) >= 135) {
+                    column.style.width = `${w + dx}px`;
+                    colWidths[colIndex - 1] = `${w + dx}px`;
+                }
+
+                var docWidth = document.getElementById('notebook-container').style.width;
+                docWidth = parseInt(docWidth.replace('px', ''));
+                docWidth += dx;
+                if (docWidth >= numColumns * 600) {
+                    document.getElementById('notebook-container').style.width = `${docWidth}px`;
+                }
+
+            };
+
+            const mouseUpHandler = function () {
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+            };
+
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+        });
+
         //prompt.ondragstart = function() { return false; };
         //prompt_container.append(repos).append(prompt).append(run_this_cell);
         // new containers needed to insert repos:
-        var cell2 = $('<div style="display: flex; flex-direction: row; align-items: stretch;"></div>');  // contains repos and cell3, needs to change to row flow
+        var cell2 = $('<div style="display: flex; flex-direction: row; "></div>');  // contains repos and cell3, needs to change to row flow
         var cell3 = $('<div style="display: flex; flex-direction: column; align-items: stretch; width: 98%;"></div>');  // new container for input and output, needs to change to column flow
         cell3.append(input).append(output); ////
-        cell2.append(repos).append(cell3);  ////
+        cell2.append(repos).append(cell3).append(resize);  ////
         cell.append(cell2); 				//// cell cell2 repos cell3 input output
         //
         /////////////////////////////////////////////////////*/
@@ -929,11 +973,8 @@ define([
         resize.style.float = "right";
         resize.style.backgroundColor = "lightgrey";
         resize.style.cursor = 'col-resize';
-        //resize.onclick = "resize()";
         resize.addEventListener("mousedown", resizeColumns);
 
-
-        //resize.addEventListener("mousedown", resize());
 
         buttons.append(resize);
 
@@ -1308,7 +1349,6 @@ define([
         this.command_mode();
         this.set_dirty(true);
     };
-
 
 
 
