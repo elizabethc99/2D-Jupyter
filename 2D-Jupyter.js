@@ -1382,7 +1382,7 @@ define([
                 for (var i = 0; i < newColumnId - 1; i++) {
                     numCells += colCellCounts[i];
                 }
-                numCells += colIndex; S
+                numCells += colIndex;
             }
             else {
                 for (var i = 0; i < newColumnId; i++) {
@@ -1394,6 +1394,46 @@ define([
             var currCell = selectedCell.element.detach();
             $(prevCell).after(currCell);
             reindex();
+
+        }
+    }
+
+    function move_cell_right() {
+        //TODO: edge case when cell is at the top of the column
+        var selectedCellElement = document.querySelector(".cell.selected");
+        var currentColumnElement = selectedCellElement.parentElement;
+
+        var selectedCell = Jupyter.notebook.get_selected_cell();
+        var currentColumnId = selectedCell.metadata.column;
+        var colIndex = selectedCell.metadata.columnIndex;
+
+        countCellsinColumns();
+        var numCols = colCellCounts.length;
+        console.log(numCols);
+
+        if(currentColumnId < numCols){
+            var newColumnId = currentColumnId + 1;
+            var cellsInNextCol = colCellCounts[newColumnId - 1]; 
+    
+            var numCells = 0;
+            if (colIndex <= cellsInNextCol) { 
+                for(var i = 0; i<currentColumnId; i++){
+                    numCells += colCellCounts[i];
+                }
+                numCells += colIndex;
+            }
+            else {
+                for (var i = 0; i <newColumnId; i++) {
+                    numCells += colCellCounts[i];
+                }
+            }
+           
+            var allCells = document.getElementsByClassName("cell");
+            var prevCell = allCells[numCells - 1];
+            var currCell = selectedCell.element.detach();
+            $(prevCell).after(currCell);
+            reindex();
+        
 
         }
     }
@@ -1462,8 +1502,16 @@ define([
                     move_cell_left();
                 },
             }, 'move-cell-left', 'jupyter-notebook'),
-        ], 'move-cells-horizontal')).find('.btn').attr('id', 'move-cells-horizontal');
-        $("#maintoolbar-container").append($('#move-cells-horizontal'));
+            IPython.keyboard_manager.actions.register({
+                'help': 'Move cell left',
+                'icon': 'fa-arrow-right ',
+                'handler': function () {
+                    move_cell_right();
+                },
+            }, 'move-cell-right', 'jupyter-notebook'),
+        ], 'move_left_right')).find('.btn').attr('id', 'move_left_right');
+
+        $('#move_left_right').insertAfter( $("#maintoolbar-container").find('#move_up_down'));
 
         Jupyter.notebook.restore_checkpoint('checkpoint')
         return Jupyter.notebook.config.loaded.then(initialize);
