@@ -979,53 +979,53 @@ define([
         buttons.append(resize);
 
 
-        var addCell = document.createElement('button');
-        addCell.classList.add("btn");
-        addCell.classList.add("btn-default");
-        addCell.style.float = "left";
-        addCell.innerHTML = '<i class = "fa fa-plus"></i>';
-        addCell.onclick = function () {
-            if (column == 0) { //if first column
-                Jupyter.notebook.insert_cell_at_index('code', 0);
-            }
-            else {
-                console.log(column);
-                var columns = document.getElementsByClassName("column");
-                var colIndex = $(this).parents()[2].id;
-                colIndex = colIndex.replace('column', '');
-                var currCol = columns[colIndex - 1];
-                var cellsInCol = currCol.getElementsByClassName("cell");
-                if (cellsInCol.length == 0) { //if column is empty
-                    var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
-                    newCodeCell.set_input_prompt();
-                    newCodeCell.metadata.column = column;
-                    currCol = columns[colIndex - 1];
-                    $(currCol).append(newCodeCell.element);
+        // var addCell = document.createElement('button');
+        // addCell.classList.add("btn");
+        // addCell.classList.add("btn-default");
+        // addCell.style.float = "left";
+        // addCell.innerHTML = '<i class = "fa fa-plus"></i>';
+        // addCell.onclick = function () {
+        //     if (column == 0) { //if first column
+        //         Jupyter.notebook.insert_cell_at_index('code', 0);
+        //     }
+        //     else {
+        //         console.log(column);
+        //         var columns = document.getElementsByClassName("column");
+        //         var colIndex = $(this).parents()[2].id;
+        //         colIndex = colIndex.replace('column', '');
+        //         var currCol = columns[colIndex - 1];
+        //         var cellsInCol = currCol.getElementsByClassName("cell");
+        //         if (cellsInCol.length == 0) { //if column is empty
+        //             var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
+        //             newCodeCell.set_input_prompt();
+        //             newCodeCell.metadata.column = column;
+        //             currCol = columns[colIndex - 1];
+        //             $(currCol).append(newCodeCell.element);
 
-                }
-                else {
-                    // var lastCell = cellsInCol[cellsInCol.length - 1];
-                    // var lastIndex = lastCell.getElementsByClassName("repos")[0].innerHTML;
-                    // Jupyter.notebook.insert_cell_at_index('code', lastIndex);
+        //         }
+        //         else {
+        //             // var lastCell = cellsInCol[cellsInCol.length - 1];
+        //             // var lastIndex = lastCell.getElementsByClassName("repos")[0].innerHTML;
+        //             // Jupyter.notebook.insert_cell_at_index('code', lastIndex);
 
-                    var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
-                    newCodeCell.set_input_prompt();
-                    newCodeCell.metadata.column = column;
-                    currCol = columns[colIndex - 1];
-                    $(currCol).append(newCodeCell.element);
-                    reindex();
-                    setColumnNumber();
+        //             var newCodeCell = new codecell.CodeCell(Jupyter.notebook.kernel, cell_options);
+        //             newCodeCell.set_input_prompt();
+        //             newCodeCell.metadata.column = column;
+        //             currCol = columns[colIndex - 1];
+        //             $(currCol).append(newCodeCell.element);
+        //             reindex();
+        //             setColumnNumber();
 
-                }
-            }
+        //         }
+        //     }
 
-        };
-        buttons.append(addCell);
+        // };
+        // buttons.append(addCell);
 
         var moveColRight = document.createElement('button');
         moveColRight.classList.add("btn");
         moveColRight.classList.add("btn-default");
-        moveColRight.style.float = "right";
+        moveColRight.style.float = "left";
         moveColRight.innerHTML = '<i class = "fa fa-arrow-right"></i>';
         moveColRight.onclick = function () {
             var colIndex = $(this).parents()[2].id;
@@ -1068,12 +1068,11 @@ define([
 
             }
         }
-        buttons.append(moveColRight);
 
         var moveColLeft = document.createElement('button');
         moveColLeft.classList.add("btn");
         moveColLeft.classList.add("btn-default");
-        moveColLeft.style.float = "right";
+        moveColLeft.style.float = "left";
 
         moveColLeft.innerHTML = '<i class = "fa fa-arrow-left"></i>';
         moveColLeft.onclick = function () {
@@ -1116,6 +1115,7 @@ define([
             }
         }
         buttons.append(moveColLeft);
+        buttons.append(moveColRight);
 
         var clickable = document.createElement('div');
         clickable.classList.add("clickable-area")
